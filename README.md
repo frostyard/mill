@@ -1,5 +1,9 @@
 # mill
 
+<p align="center">
+  <img src="docs/mill-web.webp" width="460" alt="A retro-futurist grain mill in a glowing control room — grain moving through the rollers, gauges and monitors all around.">
+</p>
+
 **Grain goes in, flour comes out, and the machinery doesn't improvise.**
 
 The mill is frostyard's answer to a specific problem: coding agents are

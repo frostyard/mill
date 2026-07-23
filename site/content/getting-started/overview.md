@@ -5,6 +5,9 @@ group: Getting started
 order: 1
 ---
 
+![A retro-futurist grain mill in a glowing control room — grain moving
+through the rollers, gauges and monitors all around.](/mill.webp)
+
 Grain goes in, flour comes out, and the machinery doesn't improvise.
 
 The mill is frostyard's spec-to-PR harness. It takes a complete
