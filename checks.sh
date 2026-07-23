@@ -31,6 +31,8 @@ cases = [
     ('```json\n{"verdict": {"verdict": "pass"}}\n```', "pass"),
     ("verdict: FAIL because", "fail"),
     ("garbage", "unparseable"),
+    ('{"response": "prose\n```json\n{\"verdict\": \"pass\", \"findings\": []}\n```"}', "pass"),
+    ('{"result": "```json\n{\"verdict\": \"needs_clarification\"}\n```"}', "needs_clarification"),
 ]
 for text, want in cases:
     got, _ = m.parse_review(text)

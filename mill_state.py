@@ -98,17 +98,23 @@ def staged_hash():
     return hashlib.sha256(p.stdout.encode()).hexdigest()
 
 
-def parse_review(text):
+def parse_review(text, _depth=0):
     """Normalize a reviewer's free-form reply into (verdict, payload).
 
     Reviewer output shapes must never be able to kill a run (conductor
     treats schema ValidationError as fatal), so reviewers emit plain text
     ending in a JSON block and this function does tolerant extraction:
     full-JSON reply, fenced ```json block (last one wins), any {...} span,
-    dict-wrapped verdicts, then keyword fallback. Unparseable replies are
-    rejection-biased ("unparseable" — callers treat it as revise/fail).
+    dict-wrapped verdicts, then keyword fallback. It also unwraps conductor's
+    raw-output envelopes — standalone agents expose text under 'result',
+    parallel-group members under 'response' — by recursing into the wrapped
+    text, so callers can pass either the raw text or the whole output object.
+    Unparseable replies are rejection-biased ("unparseable" — callers treat
+    it as revise/fail).
     """
     text = text or ""
+    if not isinstance(text, str):
+        text = json.dumps(text)
     candidates = []
     fenced = re.findall(r"```(?:json)?\s*(\{.*?\})\s*```", text, re.S)
     candidates.extend(reversed(fenced))
@@ -123,13 +129,21 @@ def parse_review(text):
             continue
         if not isinstance(d, dict):
             continue
+        # Unwrap a conductor output envelope by recursing into its text.
+        if _depth < 3:
+            for wrap in ("response", "result", "content", "output"):
+                inner = d.get(wrap)
+                if isinstance(inner, str) and inner.strip():
+                    v2, p2 = parse_review(inner, _depth + 1)
+                    if v2 != "unparseable":
+                        return v2, p2
         v = d.get("verdict")
         if isinstance(v, dict):
             v = v.get("verdict") or v.get("decision") or v.get("value")
         if isinstance(v, str) and v.strip():
             return v.strip().lower(), d
     low = text.lower()
-    for kw in ("approve", "revise", "pass", "fail"):
+    for kw in ("approve", "revise", "pass", "fail", "sound", "needs_clarification"):
         if re.search(rf"verdict\W{{0,20}}{kw}", low):
             return kw, {}
     return "unparseable", {}

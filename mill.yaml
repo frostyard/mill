@@ -605,8 +605,8 @@ agents:
     description: No-touch check + write final report, route on both verdicts
     command: python3
     args: ["{{ workflow.dir }}/mill_state.py", "final-gate",
-           "{{ final_reviews.outputs.security_review.result }}",
-           "{{ final_reviews.outputs.compliance_review.result }}"]
+           "{{ final_reviews.outputs.security_review | tojson }}",
+           "{{ final_reviews.outputs.compliance_review | tojson }}"]
     timeout: 60
     routes:
       - to: harvest
