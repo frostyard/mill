@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Run the mill (frostyard's spec→PR harness) against the current repository.
 #
-#   mill <issue#|spec-file> [--auto] [--no-pr] [--no-deep] [--fresh]
+#   mill <issue#|spec-file> [--auto] [--web] [--no-pr] [--no-deep] [--fresh]
 #
 #   --auto     unattended: auto-approve human gates (conductor --skip-gates)
 #   --web      run in background with the conductor web dashboard (gates are

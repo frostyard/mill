@@ -110,9 +110,14 @@ the cross-agent surfaces (`CLAUDE.md`, `.github/copilot-instructions.md`,
 
 ```sh
 mill 35                    # run issue #35, interactive gates
+mill 35 --no-pr --web      # background run with a live web dashboard
 mill spec.md --auto        # unattended (auto-approves gates)
 mill 35 --no-pr --no-deep  # local-only, fast gates
 ```
+
+`--web` gives you conductor's real-time dashboard — the pipeline as a live
+graph with streaming agent output, and human gates you answer in the
+browser.
 
 First run on a new repo: use interactive gates and `--no-pr`, and
 sanity-check the plan at the approval gate.

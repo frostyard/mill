@@ -27,13 +27,38 @@ review, the run pauses at the first human gate: read `.mill/plan.md` and
 decide.
 
 After approval the chunk loop runs unattended: implement, gate, review,
-commit, repeat. Watch progress with conductor's `--web` dashboard or by
-tailing the event log in `/tmp/conductor/`.
+commit, repeat. See [the live dashboard](#the-live-dashboard) below for the
+best way to watch.
 
 The run ends at the second human gate with a final report in
 `.mill/final_report.md` — a security verdict and a requirement-by-requirement
 compliance matrix. Since you passed `--no-pr`, the branch stays local
 regardless of what you choose.
+
+## The live dashboard
+
+Add `--web` and the run detaches into the background with a local web
+dashboard:
+
+```sh
+mill 35 --no-pr --web
+```
+
+```
+Dashboard: http://127.0.0.1:41581
+```
+
+The dashboard shows the whole pipeline as a live graph — every agent, gate,
+and loop, lighting up as the run moves — with streaming output from the
+agent that's currently working. Human gates park there too: read the plan or
+the final report, then answer in the browser, or from any shell:
+
+```sh
+conductor gate respond --port 41581 --choice proceed
+```
+
+This is the shape to use for long runs: close the laptop lid metaphorically,
+keep the tab open literally.
 
 ## When something stops
 
