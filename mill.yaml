@@ -81,6 +81,7 @@ agents:
   - name: spec_review
     provider: copilot
     model: gpt-5.5
+    max_agent_iterations: 120
     description: "Validate the spec itself before any planning spend (GPT)"
     prompt: |
       You are an adversarial specification reviewer. Before anything is
@@ -162,6 +163,7 @@ agents:
 
   # ------------------------------------------------------------------ plan
   - name: plan
+    max_agent_iterations: 200
     description: Produce the chunked implementation plan
     prompt: |
       You are planning an implementation in this repository.
@@ -223,6 +225,7 @@ agents:
   - name: plan_review
     provider: copilot
     model: gpt-5.5
+    max_agent_iterations: 120
     description: "Adversarial cross-model plan review (GPT)"
     prompt: |
       You are an adversarial reviewer. Your job is to REJECT this plan if you
@@ -335,6 +338,7 @@ agents:
       - to: implement
 
   - name: implement
+    max_agent_iterations: 200
     description: Implement exactly one chunk
     prompt: |
       Implement chunk {{ select_chunk.output.index + 1 }} of
@@ -384,6 +388,7 @@ agents:
       - to: fix
 
   - name: fix
+    max_agent_iterations: 150
     description: Fix the failing quality gate
     prompt: |
       The quality gates failed after implementing chunk
@@ -421,6 +426,7 @@ agents:
   - name: chunk_review
     provider: copilot
     model: gpt-5.5
+    max_agent_iterations: 120
     description: "Adversarial cross-model chunk review (GPT)"
     prompt: |
       You are an adversarial reviewer. Try to REJECT this change, which was
@@ -487,6 +493,7 @@ agents:
   # Failed runs are the most instructive ones — distill their lessons
   # before terminating instead of losing them with the worktree.
   - name: failure_harvest
+    max_agent_iterations: 80
     description: Distill lessons from a failing run before it terminates
     prompt: |
       This run is terminating as FAILED. Before it does, capture what it
@@ -533,6 +540,7 @@ agents:
 
   # -------------------------------------------------------- final reviews
   - name: security_review
+    max_agent_iterations: 150
     description: Whole-branch security review (Claude)
     prompt: |
       Security-review the entire mill branch. The base commit is recorded in
@@ -558,6 +566,7 @@ agents:
   - name: compliance_review
     provider: copilot
     model: gpt-5.5
+    max_agent_iterations: 150
     description: "Spec-compliance matrix review (GPT)"
     prompt: |
       You are auditing whether an implementation actually satisfies its
@@ -601,6 +610,7 @@ agents:
 
   # --------------------------------------------------- self-improvement
   - name: harvest
+    max_agent_iterations: 80
     description: Distill this run's friction into durable agent skills
     prompt: |
       The implementation is done and reviewed. Your job is self-improvement:
