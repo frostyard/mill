@@ -1,0 +1,157 @@
+<svg viewBox="0 0 940 560" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" role="img" aria-label="The mill pipeline">
+  <style>
+    .box   { fill:#ffffff; stroke-width:1.6; }
+    .cont  { fill:#f1f5f9; fill-opacity:.55; stroke:#cbd5e1; stroke-width:1; }
+    .t     { fill:#1f2937; font-size:12.5px; font-weight:600; text-anchor:middle; }
+    .s     { fill:#6b7280; font-size:10px; text-anchor:middle; }
+    .lbl   { fill:#6b7280; font-size:10px; font-style:italic; }
+    .cap   { fill:#6b7280; font-size:10.5px; font-style:italic; }
+    .leg   { fill:#1f2937; font-size:11px; }
+    .script{ stroke:#64748b; }
+    .claude{ stroke:#d97757; }
+    .gpt   { stroke:#6366f1; }
+    .human { stroke:#d97706; }
+    .flow  { stroke:#8b949e; stroke-width:1.5; fill:none; }
+    .loop  { stroke:#8b949e; stroke-width:1.3; fill:none; stroke-dasharray:4 3; }
+    .chip  { fill:#ffffff; stroke-width:2; }
+    @media (prefers-color-scheme: dark) {
+      .box   { fill:#161b22; }
+      .cont  { fill:#161b22; fill-opacity:.6; stroke:#30363d; }
+      .t     { fill:#e6edf3; }
+      .leg   { fill:#e6edf3; }
+      .s, .lbl, .cap { fill:#8b949e; }
+      .script{ stroke:#94a3b8; }
+      .claude{ stroke:#e8937e; }
+      .gpt   { stroke:#8b95f9; }
+      .human { stroke:#e3b341; }
+      .chip  { fill:#161b22; }
+    }
+  </style>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#8b949e"/>
+    </marker>
+  </defs>
+
+  <!-- ================= row 1 : spec to approved plan ================= -->
+  <rect class="box script" x="44"  y="48" width="100" height="50" rx="8"/>
+  <text class="t" x="94"  y="69">ingest</text>
+  <text class="s" x="94"  y="85">issue # or spec file</text>
+
+  <rect class="box script" x="168" y="48" width="120" height="50" rx="8"/>
+  <text class="t" x="228" y="69">baseline gate</text>
+  <text class="s" x="228" y="85">must be green</text>
+
+  <rect class="box claude" x="312" y="48" width="92" height="50" rx="8"/>
+  <text class="t" x="358" y="69">plan</text>
+  <text class="s" x="358" y="85">chunked plan</text>
+
+  <rect class="box gpt" x="428" y="48" width="124" height="50" rx="8"/>
+  <text class="t" x="490" y="69">plan review</text>
+  <text class="s" x="490" y="85">adversarial</text>
+
+  <rect class="box human" x="576" y="48" width="118" height="50" rx="25"/>
+  <text class="t" x="635" y="69">approve plan</text>
+  <text class="s" x="635" y="85">human gate</text>
+
+  <line class="flow" x1="144" y1="73" x2="164" y2="73" marker-end="url(#a)"/>
+  <line class="flow" x1="288" y1="73" x2="308" y2="73" marker-end="url(#a)"/>
+  <line class="flow" x1="404" y1="73" x2="424" y2="73" marker-end="url(#a)"/>
+  <line class="flow" x1="552" y1="73" x2="572" y2="73" marker-end="url(#a)"/>
+
+  <path class="loop" d="M 490 48 C 470 20 378 20 358 44" marker-end="url(#a)"/>
+  <text class="lbl" x="424" y="18" text-anchor="middle">revise (&#8804;3)</text>
+
+  <!-- drop from approved plan into the chunk loop -->
+  <path class="flow" d="M 694 73 H 912 V 128 H 120 V 160" marker-end="url(#a)"/>
+  <text class="lbl" x="800" y="120">plan approved</text>
+
+  <!-- ================= chunk loop container ================= -->
+  <rect class="cont" x="40" y="138" width="884" height="210" rx="10"/>
+  <text class="lbl" x="908" y="158" text-anchor="end">for each chunk (sequential)</text>
+
+  <rect class="box claude" x="64" y="168" width="112" height="50" rx="8"/>
+  <text class="t" x="120" y="189">implement</text>
+  <text class="s" x="120" y="205">one chunk only</text>
+
+  <rect class="box script" x="200" y="168" width="132" height="50" rx="8"/>
+  <text class="t" x="266" y="189">quality gates</text>
+  <text class="s" x="266" y="205">gen &#183; fmt &#183; vet &#183; test</text>
+
+  <rect class="box gpt" x="356" y="168" width="124" height="50" rx="8"/>
+  <text class="t" x="418" y="189">chunk review</text>
+  <text class="s" x="418" y="205">adversarial</text>
+
+  <rect class="box script" x="504" y="168" width="112" height="50" rx="8"/>
+  <text class="t" x="560" y="189">commit chunk</text>
+  <text class="s" x="560" y="205">cursor++</text>
+
+  <line class="flow" x1="176" y1="193" x2="196" y2="193" marker-end="url(#a)"/>
+  <line class="flow" x1="332" y1="193" x2="352" y2="193" marker-end="url(#a)"/>
+  <line class="flow" x1="480" y1="193" x2="500" y2="193" marker-end="url(#a)"/>
+
+  <!-- fix loop under the gates -->
+  <rect class="box claude" x="216" y="252" width="100" height="36" rx="8"/>
+  <text class="t" x="266" y="274">fix</text>
+  <line class="flow" x1="240" y1="218" x2="240" y2="248" marker-end="url(#a)"/>
+  <line class="flow" x1="292" y1="252" x2="292" y2="222" marker-end="url(#a)"/>
+  <text class="lbl" x="326" y="274">red? fix (&#8804;3)</text>
+
+  <path class="loop" d="M 418 168 C 398 142 172 142 152 164" marker-end="url(#a)"/>
+  <text class="lbl" x="285" y="152" text-anchor="middle">revise (&#8804;2)</text>
+
+  <path class="loop" d="M 560 218 C 520 332 170 332 122 222" marker-end="url(#a)"/>
+  <text class="lbl" x="360" y="324" text-anchor="middle">next chunk</text>
+
+  <!-- exit to final reviews -->
+  <path class="flow" d="M 616 193 H 896 V 368 H 119 V 380" marker-end="url(#a)"/>
+  <text class="lbl" x="720" y="363">all chunks done</text>
+
+  <!-- ================= row 3 : final reviews to PR ================= -->
+  <text class="lbl" x="44" y="377">in parallel</text>
+  <rect class="box claude" x="44" y="384" width="150" height="34" rx="8"/>
+  <text class="t" x="119" y="405">security review</text>
+  <rect class="box gpt" x="44" y="424" width="150" height="34" rx="8"/>
+  <text class="t" x="119" y="445">spec compliance</text>
+
+  <line class="flow" x1="194" y1="401" x2="232" y2="416" marker-end="url(#a)"/>
+  <line class="flow" x1="194" y1="441" x2="232" y2="430" marker-end="url(#a)"/>
+
+  <rect class="box claude" x="238" y="398" width="116" height="50" rx="8"/>
+  <text class="t" x="296" y="419">harvest</text>
+  <text class="s" x="296" y="435">friction &#8594; skills</text>
+
+  <rect class="box script" x="378" y="398" width="110" height="50" rx="8"/>
+  <text class="t" x="433" y="419">deep gate</text>
+  <text class="s" x="433" y="435">docker-test</text>
+
+  <rect class="box human" x="512" y="398" width="104" height="50" rx="25"/>
+  <text class="t" x="564" y="419">ship it?</text>
+  <text class="s" x="564" y="435">human gate</text>
+
+  <rect class="box script" x="640" y="398" width="108" height="50" rx="8"/>
+  <text class="t" x="694" y="419">push + PR</text>
+  <text class="s" x="694" y="435">gh pr create</text>
+
+  <line class="flow" x1="354" y1="423" x2="374" y2="423" marker-end="url(#a)"/>
+  <line class="flow" x1="488" y1="423" x2="508" y2="423" marker-end="url(#a)"/>
+  <line class="flow" x1="616" y1="423" x2="636" y2="423" marker-end="url(#a)"/>
+
+  <!-- self-improvement: skills feed every future run -->
+  <path class="loop" d="M 296 450 C 140 468 14 400 14 240 C 14 118 240 116 350 100" marker-end="url(#a)"/>
+  <text class="lbl" x="120" y="466">lessons feed every future run</text>
+
+  <!-- ================= legend ================= -->
+  <rect class="chip script" x="44"  y="505" width="12" height="12" rx="3"/>
+  <text class="leg" x="63" y="515">script &#8212; deterministic referee</text>
+  <rect class="chip claude" x="248" y="505" width="12" height="12" rx="3"/>
+  <text class="leg" x="267" y="515">Claude &#8212; implements</text>
+  <rect class="chip gpt" x="420" y="505" width="12" height="12" rx="3"/>
+  <text class="leg" x="439" y="515">GPT (Copilot) &#8212; adversarial review</text>
+  <rect class="chip human" x="656" y="505" width="12" height="12" rx="6"/>
+  <text class="leg" x="675" y="515">human &#8212; decides</text>
+  <line class="loop" x1="796" y1="511" x2="826" y2="511"/>
+  <text class="leg" x="832" y="515">bounded loop</text>
+
+  <text class="cap" x="44" y="545">the entire run happens inside an isolated git worktree &#8212; scripts own git; models never grade their own work</text>
+</svg>

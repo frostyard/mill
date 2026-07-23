@@ -53,13 +53,7 @@ verify, so you don't spend attention to trust.
 A complete specification (a GitHub issue or a markdown file) goes through
 the mill using [microsoft/conductor](https://github.com/microsoft/conductor):
 
-```
-ingest → baseline gate → plan (claude) → adversarial plan review (gpt) ⟲
-→ human gate → [ implement (claude) → deterministic gate ⟲ fix
-                 → adversarial chunk review (gpt) → commit ] per chunk
-→ security review (claude) ∥ spec-compliance matrix (gpt)
-→ harvest (self-improvement) → deep gate → human ship gate → push + PR
-```
+![The mill pipeline: ingest and baseline gate, then plan with adversarial cross-model review and a human approval gate; then per-chunk implement → quality gates → adversarial review → commit with bounded fix and revise loops; then parallel security and spec-compliance reviews, harvest, deep gate, human ship gate, and PR. Lessons harvested from each run feed every future run.](docs/flow.svg)
 
 The engine is generic. Everything repo-specific — gate commands, context
 docs, security invariants, harvest allowlist — lives in a committed
