@@ -41,8 +41,11 @@ non-zero on failure. Order them cheapest-first: codegen, format check,
 static analysis, tests. Gate commands are repo-committed and carry the same
 trust as the Makefile they invoke.
 
-`deep` — the heavyweight pre-ship gate: containerized tests, full lint,
-integration suites. `--no-deep` substitutes the chunk gates.
+`deep` — the heavyweight pre-ship gate. Best practice: point it at a single
+make target that runs *every gate CI runs, in CI's order* (for example a
+`make ci` / `make docker-ci` target). One target means the mill, a human
+before pushing, and CI all agree about what "passing" means — no
+local-green/CI-red surprises. `--no-deep` substitutes the chunk gates.
 
 In `bash -c` pipelines remember the exit code is the last command's — use
 `set -o pipefail`, and wrap `grep` filters in `{ grep ... || true; }` so an

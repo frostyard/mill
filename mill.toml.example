@@ -11,8 +11,10 @@ chunk = [
   "go test ./... 2>&1 | { grep -v '^ok ' || true; } | tail -c 6000; exit ${PIPESTATUS[0]}",
 ]
 # Heavier final gate before the ship decision (mill.sh --no-deep skips these
-# and re-runs the chunk gates instead).
-deep = ["make docker-test"]
+# and re-runs the chunk gates instead). Best practice: one make target that
+# runs every gate CI runs, in CI's order — local green then means CI green,
+# and agents, humans, and CI can never disagree about what "passing" means.
+deep = ["make docker-ci"]
 
 [context]
 # Docs every agent must read before planning/implementing/reviewing.

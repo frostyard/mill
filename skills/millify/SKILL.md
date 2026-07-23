@@ -29,8 +29,12 @@ for the reference shape):
   codegen (if any), format check, static analysis, unit tests. Each entry is
   run via `bash -c` and must exit non-zero on failure. Prefer the repo's own
   make/just targets over raw tool invocations.
-- `[gates] deep` — the heavyweight pre-ship gate (containerized tests, full
-  lint, integration suite). If none exists, repeat the chunk gates.
+- `[gates] deep` — the heavyweight pre-ship gate. Strongly prefer a single
+  target that mirrors CI exactly (every job CI runs, in CI's order). If the
+  repo has no such target, offer to create one (e.g. `make ci` derived from
+  the CI workflow definitions) and document it in the conventions doc —
+  local green must mean CI green. If none exists and the user declines,
+  repeat the chunk gates.
 - `[context] docs` — AGENTS.md first, then any architecture docs an agent
   should read before working (grep for AI/agent-oriented docs).
 - `[context] skills_dir` — `docs/agents/skills` unless the repo has an
