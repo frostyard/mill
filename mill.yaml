@@ -362,6 +362,14 @@ agents:
       - Implement ONLY this chunk. Do not start later chunks.
       - Meet every acceptance criterion listed for the chunk.
       - Leave the tree building and tests passing.
+      - If this chunk changes behavior or adds/changes public API, and the
+        conventions docs require documentation updates on such changes (many
+        do — e.g. AGENTS.md often requires README/architecture-doc updates),
+        make those doc updates IN THIS chunk, describing exactly this
+        commit's state — neither the end-state the plan is building toward
+        nor the previous chunk's state.
+      - Prove acceptance criteria through the production code path, not a
+        test-only stand-in that bypasses it.
       - Do NOT run git commit/push/checkout — a deterministic step owns git.
       - Do NOT write into .mill/.
 
