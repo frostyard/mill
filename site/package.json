@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "astro dev",
     "build": "astro build && pagefind --site dist",
+    "test": "npm run build && node --test tests/*.test.mjs",
     "preview": "astro preview",
     "deploy": "npm run build && wrangler deploy"
   },
