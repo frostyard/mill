@@ -216,6 +216,61 @@ def cmd_check_plan():
     out(ok=True, num_chunks=len(chunks))
 
 
+def plan_trajectory():
+    """Summarize plan-review rounds from the journal: counts, repeats, and a
+    heuristic diagnosis the escalation gate can show a human."""
+    rounds = []
+    path = MILL / "journal.jsonl"
+    if path.is_file():
+        for line in path.read_text().splitlines():
+            try:
+                e = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if e.get("event") == "plan_revise":
+                rounds.append([str(o.get("section", ""))[:40].lower()
+                               for o in e.get("objections", [])])
+    if not rounds:
+        return "no revision rounds recorded"
+    counts = [len(r) for r in rounds]
+    overlaps = []
+    for prev, cur in zip(rounds, rounds[1:]):
+        shared = sum(1 for s_ in cur if any(s_[:25] and s_[:25] in p_ for p_ in prev))
+        overlaps.append(shared / len(cur) if cur else 0)
+    avg_overlap = sum(overlaps) / len(overlaps) if overlaps else 0
+    if avg_overlap > 0.6:
+        diag = ("objections REPEAT across rounds — likely reviewer/planner "
+                "disagreement on one point; read the objections and decide, "
+                "or fix the spec on that point")
+    elif counts[-1] <= 2 and counts[-1] <= counts[0]:
+        diag = ("objections are CONVERGING — the spec likely has one or two "
+                "specific defects; fix those in the spec and rerun")
+    else:
+        diag = ("objections keep finding NEW sections — the spec is likely "
+                "too large to converge; consider decomposing into phases")
+    return f"objections per round: {' -> '.join(map(str, counts))}; {diag}"
+
+
+def cmd_spec_verdict(review_text):
+    """Gate after the spec reviewer: sound -> plan, anything else -> human."""
+    verdict, payload = parse_review(review_text)
+    dirty = tree_dirty_outside_mill()
+    if dirty:
+        sh("git", "checkout", "--", ".")
+        sh("git", "clean", "-fd")
+    findings = payload.get("findings", [])
+    est = payload.get("estimated_chunks", 0)
+    (MILL / "spec_findings.json").write_text(json.dumps(
+        {"verdict": verdict, "estimated_chunks": est, "findings": findings},
+        indent=2))
+    journal("spec_review", verdict=verdict, findings=findings,
+            estimated_chunks=est)
+    if verdict == "sound" and not dirty:
+        out(action="plan", findings_count=len(findings), estimated_chunks=est)
+    out(action="clarify", findings_count=len(findings), estimated_chunks=est,
+        summary="; ".join(str(f.get("detail", ""))[:100] for f in findings[:4]))
+
+
 def cmd_plan_verdict(review_text):
     verdict, payload = parse_review(review_text)
     objections_json = json.dumps(payload.get("objections", []))
@@ -235,9 +290,11 @@ def cmd_plan_verdict(review_text):
     (MILL / "objections.json").write_text(objections_json)
     max_rounds = load_config()["limits"]["plan_rounds"]
     if prog["plan_rounds"] >= max_rounds:
-        out(action="escalate",
-            error=f"plan not approved after {max_rounds} rounds — "
-                  "spec likely needs human clarification")
+        prog["fail_reason"] = (f"plan not approved after {max_rounds} rounds — "
+                               "spec likely needs human clarification")
+        save_progress(prog)
+        out(action="escalate", error=prog["fail_reason"],
+            trajectory=plan_trajectory())
     out(action="revise", rounds=prog["plan_rounds"])
 
 
@@ -262,12 +319,14 @@ def cmd_impl_gate():
         save_progress(prog)
         out(gate="pass")
     prog["attempts"] += 1
+    give_up = prog["attempts"] >= load_config()["limits"]["gate_attempts"]
+    if give_up:
+        prog["fail_reason"] = (f"chunk {prog['chunk']} could not pass quality "
+                               f"gates after {prog['attempts']} attempts")
     save_progress(prog)
     journal("gate_fail", chunk=prog["chunk"], attempt=prog["attempts"],
             log=log[-1500:])
-    out(gate="fail", attempts=prog["attempts"],
-        give_up=prog["attempts"] >= load_config()["limits"]["gate_attempts"],
-        log=log)
+    out(gate="fail", attempts=prog["attempts"], give_up=give_up, log=log)
 
 
 def cmd_pre_review():
@@ -297,8 +356,10 @@ def cmd_review_gate(review_text):
             objections=json.loads(objections_json))
     max_rounds = load_config()["limits"]["review_rounds"]
     if prog["review_rounds"] > max_rounds:
-        out(action="abort",
-            error=f"chunk {prog['chunk']} not approved after {max_rounds} review rounds")
+        prog["fail_reason"] = (f"chunk {prog['chunk']} not approved after "
+                               f"{max_rounds} review rounds")
+        save_progress(prog)
+        out(action="abort", error=prog["fail_reason"])
     (MILL / "objections.json").write_text(objections_json)
     out(action="revise", rounds=prog["review_rounds"])
 
@@ -348,17 +409,21 @@ def cmd_harvest_gate():
             reverted.append(path)
             sh("git", "checkout", "--", path)
             sh("git", "clean", "-fd", "--", path)
+    fail_reason = load_progress().get("fail_reason", "")
     changed = [line[3:].strip() for line in tree_dirty_outside_mill()]
     if not changed:
-        out(committed=False, files=[], reverted=reverted)
+        out(committed=False, files=[], reverted=reverted,
+            fail_reason=fail_reason)
     sh("git", "add", "-A", check=True)
     p = sh("git", "commit", "-m",
            "mill: harvest — agent skills learned during this run\n\n"
            "Co-Authored-By: mill <noreply@frostyard>")
     if p.returncode != 0:
         out(committed=False, files=[], reverted=reverted,
+            fail_reason=fail_reason,
             error=f"commit failed: {p.stderr.strip()[:300]}")
-    out(committed=True, files=changed, reverted=reverted)
+    out(committed=True, files=changed, reverted=reverted,
+        fail_reason=fail_reason)
 
 
 def cmd_deep_gate(deep):
@@ -393,6 +458,7 @@ def main():
         "init": (cmd_init, 1),
         "baseline": (cmd_baseline, 0),
         "check-plan": (cmd_check_plan, 0),
+        "spec-verdict": (cmd_spec_verdict, 1),
         "plan-verdict": (cmd_plan_verdict, 1),
         "select": (cmd_select, 0),
         "impl-gate": (cmd_impl_gate, 0),

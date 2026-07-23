@@ -8,6 +8,15 @@ order: 6
 Each rule here exists because its absence produced a concrete failure —
 either in the mill's own shakedown runs or in ordinary agent use.
 
+## Validate the spec before trusting it
+
+Every deadlock in the mill's shakedown traced to a spec defect — never to
+the pipeline. So the spec is verified before anything else: grounded in
+source truth, internally consistent, unambiguous, and sized to converge.
+Universal invariants over existing code must carry transition rules, or
+they are unsatisfiable incrementally and two honest models will spend six
+rounds proving it.
+
 ## Scripts own control flow
 
 Loop counters, gate results, and every git operation live in

@@ -65,6 +65,10 @@ docs, security invariants, harvest allowlist — lives in a committed
 
 ## Design rules
 
+- **The spec is validated before anything else** — a rival model checks it
+  against source truth for grounding, contradictions (universal invariants
+  need transition rules), ambiguity, and convergible scope, escalating to a
+  human before any planning spend.
 - **All control flow is deterministic.** Loop counters, gate results, and
   every git operation live in `mill_state.py`; LLM steps never decide when a
   loop ends and never run git. Bounded retries everywhere; exhaustion

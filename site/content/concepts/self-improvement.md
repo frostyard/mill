@@ -28,6 +28,14 @@ enforces that harvest touches nothing outside its allowlist, then commits
 the lessons inside the same PR as the code, so a human reviews what was
 learned alongside what was built.
 
+## Failed runs harvest too
+
+The most instructive runs are the ones that fail. When a bounded loop is
+exhausted, the run routes through a failure-harvest step before
+terminating: the journal's objections and gate logs are distilled into
+lessons and committed on the run branch, so aborting doesn't discard what
+the failure taught.
+
 ## Skills feed every future run
 
 The planner, the implementer, and every reviewer read the skills directory

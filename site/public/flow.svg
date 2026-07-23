@@ -34,36 +34,41 @@
   </defs>
 
   <!-- ================= row 1 : spec to approved plan ================= -->
-  <rect class="box script" x="44"  y="48" width="100" height="50" rx="8"/>
-  <text class="t" x="94"  y="69">ingest</text>
-  <text class="s" x="94"  y="85">issue # or spec file</text>
+  <rect class="box script" x="24" y="48" width="84" height="50" rx="8"/>
+  <text class="t" x="66" y="69">ingest</text>
+  <text class="s" x="66" y="85">issue / spec</text>
 
-  <rect class="box script" x="168" y="48" width="120" height="50" rx="8"/>
-  <text class="t" x="228" y="69">baseline gate</text>
-  <text class="s" x="228" y="85">must be green</text>
+  <rect class="box script" x="128" y="48" width="104" height="50" rx="8"/>
+  <text class="t" x="180" y="69">baseline gate</text>
+  <text class="s" x="180" y="85">must be green</text>
 
-  <rect class="box claude" x="312" y="48" width="92" height="50" rx="8"/>
-  <text class="t" x="358" y="69">plan</text>
-  <text class="s" x="358" y="85">chunked plan</text>
+  <rect class="box gpt" x="252" y="48" width="104" height="50" rx="8"/>
+  <text class="t" x="304" y="69">spec review</text>
+  <text class="s" x="304" y="85">vs source truth</text>
 
-  <rect class="box gpt" x="428" y="48" width="124" height="50" rx="8"/>
-  <text class="t" x="490" y="69">plan review</text>
-  <text class="s" x="490" y="85">adversarial</text>
+  <rect class="box claude" x="376" y="48" width="76" height="50" rx="8"/>
+  <text class="t" x="414" y="69">plan</text>
+  <text class="s" x="414" y="85">chunked</text>
 
-  <rect class="box human" x="576" y="48" width="118" height="50" rx="25"/>
-  <text class="t" x="635" y="69">approve plan</text>
-  <text class="s" x="635" y="85">human gate</text>
+  <rect class="box gpt" x="472" y="48" width="110" height="50" rx="8"/>
+  <text class="t" x="527" y="69">plan review</text>
+  <text class="s" x="527" y="85">adversarial</text>
 
-  <line class="flow" x1="144" y1="73" x2="164" y2="73" marker-end="url(#a)"/>
-  <line class="flow" x1="288" y1="73" x2="308" y2="73" marker-end="url(#a)"/>
-  <line class="flow" x1="404" y1="73" x2="424" y2="73" marker-end="url(#a)"/>
-  <line class="flow" x1="552" y1="73" x2="572" y2="73" marker-end="url(#a)"/>
+  <rect class="box human" x="602" y="48" width="110" height="50" rx="25"/>
+  <text class="t" x="657" y="69">approve plan</text>
+  <text class="s" x="657" y="85">human gate</text>
 
-  <path class="loop" d="M 490 48 C 470 20 378 20 358 44" marker-end="url(#a)"/>
-  <text class="lbl" x="424" y="18" text-anchor="middle">revise (&#8804;3)</text>
+  <line class="flow" x1="108" y1="73" x2="124" y2="73" marker-end="url(#a)"/>
+  <line class="flow" x1="232" y1="73" x2="248" y2="73" marker-end="url(#a)"/>
+  <line class="flow" x1="356" y1="73" x2="372" y2="73" marker-end="url(#a)"/>
+  <line class="flow" x1="452" y1="73" x2="468" y2="73" marker-end="url(#a)"/>
+  <line class="flow" x1="582" y1="73" x2="598" y2="73" marker-end="url(#a)"/>
+
+  <path class="loop" d="M 527 48 C 512 20 430 20 414 44" marker-end="url(#a)"/>
+  <text class="lbl" x="470" y="18" text-anchor="middle">revise (bounded)</text>
 
   <!-- drop from approved plan into the chunk loop -->
-  <path class="flow" d="M 694 73 H 912 V 128 H 120 V 160" marker-end="url(#a)"/>
+  <path class="flow" d="M 712 73 H 912 V 128 H 120 V 160" marker-end="url(#a)"/>
   <text class="lbl" x="800" y="120">plan approved</text>
 
   <!-- ================= chunk loop container ================= -->
@@ -138,7 +143,7 @@
   <line class="flow" x1="616" y1="423" x2="636" y2="423" marker-end="url(#a)"/>
 
   <!-- self-improvement: skills feed every future run -->
-  <path class="loop" d="M 296 450 C 140 468 14 400 14 240 C 14 118 240 116 350 100" marker-end="url(#a)"/>
+  <path class="loop" d="M 296 450 C 140 468 14 400 14 240 C 14 118 250 114 400 100" marker-end="url(#a)"/>
   <text class="lbl" x="120" y="466">lessons feed every future run</text>
 
   <!-- ================= legend ================= -->
@@ -153,5 +158,5 @@
   <line class="loop" x1="796" y1="511" x2="826" y2="511"/>
   <text class="leg" x="832" y="515">bounded loop</text>
 
-  <text class="cap" x="44" y="545">the entire run happens inside an isolated git worktree &#8212; scripts own git; models never grade their own work</text>
+  <text class="cap" x="44" y="545">isolated git worktree &#8226; scripts own git &#8226; models never grade their own work &#8226; failed runs harvest lessons before terminating</text>
 </svg>

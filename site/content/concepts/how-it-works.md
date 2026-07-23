@@ -18,6 +18,19 @@ the base commit. The repository's quality gates then run once before any
 work starts — if the tree is already red, the run ends immediately, so every
 later failure is attributable to the mill.
 
+## Spec review, before anything else
+
+A run's biggest risk is a spec that can't be implemented as written. Before
+a token is spent planning, a rival model validates the specification itself
+against source truth: does it assume flags, files, or behaviors the code
+doesn't have? Does it contradict itself — especially universal invariants
+("every", "always", "never") that current code doesn't satisfy and that lack
+a transition rule? Is it ambiguous in ways that change the work? Is it small
+enough to converge (roughly a dozen chunks)? Findings escalate to a human
+immediately; in `--auto` runs they abort. Fix the spec at its source and
+rerun — that's cheaper than discovering the same defects through six rounds
+of plan review.
+
 ## Plan, adversarially reviewed
 
 claude reads the spec, the repository's context docs, and every learned
@@ -37,7 +50,9 @@ repository's gates run (a red gate loops to a fix step, at most three
 attempts); the staged diff goes to the rival reviewer against the chunk's
 acceptance criteria (at most two revision rounds); a script commits and
 advances the cursor. Every loop is bounded and every exit is deterministic.
-Exhausting a bound ends the run as failed, with a resumable checkpoint.
+Exhausting a bound ends the run as failed, with a resumable checkpoint —
+after a failure-harvest step distills what the failed run learned (see
+[self-improvement](/concepts/self-improvement)).
 
 ## Final reviews
 
