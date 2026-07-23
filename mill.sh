@@ -4,6 +4,8 @@
 #   mill <issue#|spec-file> [--auto] [--no-pr] [--no-deep] [--fresh]
 #
 #   --auto     unattended: auto-approve human gates (conductor --skip-gates)
+#   --web      run in background with the conductor web dashboard (gates are
+#              answered in the browser or via `conductor gate respond`)
 #   --no-pr    never push or open a PR, keep the branch local
 #   --no-deep  final gate runs the chunk gates instead of [gates].deep
 #   --fresh    discard an existing worktree for this source and start over
@@ -23,13 +25,14 @@ usage() { grep '^#' "$0" | sed 's/^# \{0,1\}//' | head -12; exit 1; }
 
 [ $# -ge 1 ] || usage
 SOURCE="$1"; shift
-AUTO=0 OPEN_PR=true DEEP=true FRESH=0
+AUTO=0 OPEN_PR=true DEEP=true FRESH=0 WEB=0
 for arg in "$@"; do
     case "$arg" in
         --auto)    AUTO=1 ;;
         --no-pr)   OPEN_PR=false ;;
         --no-deep) DEEP=false ;;
         --fresh)   FRESH=1 ;;
+        --web)     WEB=1 ;;
         *) usage ;;
     esac
 done
@@ -62,6 +65,7 @@ fi
 cd "$WT"
 FLAGS=()
 [ "$AUTO" = 1 ] && FLAGS+=(--skip-gates)
+[ "$WEB" = 1 ] && FLAGS+=(--web-bg)
 
 exec conductor run "$MILL_HOME/mill.yaml" \
     -i "source=$SOURCE" \
