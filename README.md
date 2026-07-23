@@ -1,8 +1,57 @@
 # mill
 
-frostyard's spec→PR harness: takes a complete specification (a GitHub issue
-or a markdown file) and puts it through the mill using
-[microsoft/conductor](https://github.com/microsoft/conductor):
+**Grain goes in, flour comes out, and the machinery doesn't improvise.**
+
+The mill is frostyard's answer to a specific problem: coding agents are
+genuinely good at writing software now, but *using* them is still guesswork.
+You hand an agent a big piece of work and get back a big pile of plausible
+changes — and now you're the one holding the bag: Did it cover the whole
+spec, or the parts it found interesting? Did the tests actually run, or did
+it *say* they ran? Did it quietly touch things it shouldn't have? Every
+answer costs you a careful read of everything it did, which was the work you
+were trying to delegate in the first place. When something goes wrong
+mid-task, the agent decides on its own what to do about it — retry, wander
+off-plan, declare victory — and by the time you look up, an hour of tokens
+has been spent painting a hallway you didn't ask for.
+
+The fragility isn't in the models. It's in handing one model the job, the
+grading of the job, and the decision about when to stop — all in one
+context, with no adversary and no referee.
+
+The mill splits those roles apart and gives each one to the party that's
+actually good at it:
+
+- **Scripts referee.** Every loop, counter, gate, and git operation is
+  deterministic code. An LLM never decides whether tests passed, when to
+  stop retrying, or what gets committed — a script does, and its answer
+  doesn't depend on a model's mood. If `make test` is red, no amount of
+  eloquence ships the chunk.
+- **A rival model grades.** The model that writes the code never grades its
+  own homework. A different vendor's model — prompted to *reject*, not to
+  assist — reviews the plan, every chunk, and finally walks the spec
+  requirement by requirement, producing a met/unmet matrix with file:line
+  evidence. Two models with different blind spots have to agree before
+  anything counts.
+- **You decide the irreversible things.** The run pauses at exactly two
+  moments: before implementation starts (is this plan what you meant?) and
+  before anything leaves the machine (does this ship?). Everything between
+  runs unattended, in an isolated worktree that can't touch your checkout.
+- **Every run makes the next one smarter.** Friction — failed gates,
+  reviewer objections, revision loops — is journaled, distilled into small
+  written lessons, committed inside the same PR for human review, and read
+  by every future run. Mistakes get made once, then become policy.
+
+The result: you hand the mill a complete specification and get back either a
+branch where every requirement is evidenced, every gate is green, and the
+review trail is written down — or an honest, early, bounded failure telling
+you exactly which assumption broke. Both outcomes are cheap to act on.
+That's the trade the mill makes everywhere: it spends tokens freely to
+verify, so you don't spend attention to trust.
+
+## How it works
+
+A complete specification (a GitHub issue or a markdown file) goes through
+the mill using [microsoft/conductor](https://github.com/microsoft/conductor):
 
 ```
 ingest → baseline gate → plan (claude) → adversarial plan review (gpt) ⟲
