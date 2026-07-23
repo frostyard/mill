@@ -26,10 +26,8 @@ MILL = pathlib.Path(".mill")
 PROGRESS = MILL / "progress.json"
 CONFIG = pathlib.Path(".mill.toml")
 
-MAX_PLAN_ROUNDS = 3
-MAX_GATE_ATTEMPTS = 3
-MAX_REVIEW_ROUNDS = 2
 GATE_LOG_TAIL = 4000
+DEFAULT_LIMITS = {"plan_rounds": 3, "gate_attempts": 3, "review_rounds": 2}
 
 
 def load_config():
@@ -44,6 +42,12 @@ def load_config():
         if not isinstance(val, typ) or not val:
             raise RuntimeError(f".mill.toml missing/invalid [{section}] {key}")
         return val
+    limits = dict(DEFAULT_LIMITS)
+    for key, val in cfg.get("limits", {}).items():
+        if key not in DEFAULT_LIMITS or not isinstance(val, int) or not 1 <= val <= 20:
+            raise RuntimeError(f".mill.toml [limits] {key} must be an int 1-20 "
+                               f"named one of {sorted(DEFAULT_LIMITS)}")
+        limits[key] = val
     return {
         "gates_chunk": need("gates", "chunk", list),
         "gates_deep": need("gates", "deep", list),
@@ -51,6 +55,7 @@ def load_config():
         "skills_dir": need("context", "skills_dir", str),
         "security_invariants": need("review", "security_invariants", str),
         "harvest_allowlist": need("harvest", "allowlist", list),
+        "limits": limits,
     }
 
 
@@ -227,11 +232,12 @@ def cmd_plan_verdict(review_text):
     save_progress(prog)
     journal("plan_revise", rounds=prog["plan_rounds"],
             objections=json.loads(objections_json))
-    if prog["plan_rounds"] >= MAX_PLAN_ROUNDS:
-        out(action="escalate",
-            error=f"plan not approved after {MAX_PLAN_ROUNDS} rounds — "
-                  "spec likely needs human clarification")
     (MILL / "objections.json").write_text(objections_json)
+    max_rounds = load_config()["limits"]["plan_rounds"]
+    if prog["plan_rounds"] >= max_rounds:
+        out(action="escalate",
+            error=f"plan not approved after {max_rounds} rounds — "
+                  "spec likely needs human clarification")
     out(action="revise", rounds=prog["plan_rounds"])
 
 
@@ -260,7 +266,8 @@ def cmd_impl_gate():
     journal("gate_fail", chunk=prog["chunk"], attempt=prog["attempts"],
             log=log[-1500:])
     out(gate="fail", attempts=prog["attempts"],
-        give_up=prog["attempts"] >= MAX_GATE_ATTEMPTS, log=log)
+        give_up=prog["attempts"] >= load_config()["limits"]["gate_attempts"],
+        log=log)
 
 
 def cmd_pre_review():
@@ -288,9 +295,10 @@ def cmd_review_gate(review_text):
     save_progress(prog)
     journal("chunk_revise", chunk=prog["chunk"], rounds=prog["review_rounds"],
             objections=json.loads(objections_json))
-    if prog["review_rounds"] > MAX_REVIEW_ROUNDS:
+    max_rounds = load_config()["limits"]["review_rounds"]
+    if prog["review_rounds"] > max_rounds:
         out(action="abort",
-            error=f"chunk {prog['chunk']} not approved after {MAX_REVIEW_ROUNDS} review rounds")
+            error=f"chunk {prog['chunk']} not approved after {max_rounds} review rounds")
     (MILL / "objections.json").write_text(objections_json)
     out(action="revise", rounds=prog["review_rounds"])
 

@@ -62,6 +62,21 @@ harvest step appends its skills pointer there.
 State the rules that must survive any change; the final security review
 checks the whole branch against them.
 
+## [limits]
+
+Optional overrides for the bounded loops. Defaults: `plan_rounds = 3`,
+`gate_attempts = 3`, `review_rounds = 2`. Large specifications converge
+slower in adversarial plan review — an 18-chunk plan can improve on every
+round and still need more than three; raise `plan_rounds` for repositories
+that take big specs. Exhausting `plan_rounds` escalates to a human gate
+rather than failing; the other two bounds end the run with a resumable
+checkpoint.
+
+```toml
+[limits]
+plan_rounds = 6
+```
+
 ## [harvest]
 
 `allowlist` — the only paths the harvest step may modify. Anything else it

@@ -32,3 +32,10 @@ broker handler without a capability guard, or expose an unaudited action.
 [harvest]
 # The only paths the harvest step may modify; everything else is reverted.
 allowlist = ["docs/agents/skills/", "AGENTS.md"]
+
+[limits]
+# Optional overrides for the bounded loops (defaults shown).
+# Large specs converge slower in plan review — raise plan_rounds for them.
+# plan_rounds = 3
+# gate_attempts = 3
+# review_rounds = 2
