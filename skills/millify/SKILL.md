@@ -72,7 +72,17 @@ Use `ln -s` with relative targets so links survive clones. `git add` them —
 git stores symlinks portably (Windows checkouts need `core.symlinks`; note
 this in the commit message if the repo has Windows contributors).
 
-## 5. Finish
+## 5. Note concurrency safety
+
+If the repo's tests or dev servers bind fixed host ports or fixed
+socket/temp paths, concurrent mill runs (multiple phases, or shared with
+other projects) will contend and produce flaky gates — the mill isolates
+the filesystem and git, not host network resources. Grep the test suite for
+fixed ports and fixed socket/temp paths; if you find any, tell the user
+their repo is not yet parallel-safe and point them at the fix (ephemeral
+ports, per-test temp dirs). Do not try to fix the tests as part of setup.
+
+## 6. Finish
 
 - Ensure `.worktrees/` is gitignored (the mill runs in worktrees there).
 - Show the user a summary: generated `.mill.toml` (ask them to sanity-check

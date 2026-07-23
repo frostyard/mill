@@ -51,6 +51,21 @@ fi
 WT="$ROOT/.worktrees/mill-$ID"
 BRANCH="mill/$ID"
 
+# Refuse to launch a second run against the same worktree — two conductors
+# writing the same .mill state and branch would corrupt both. Liveness is
+# the source of truth (no lockfile to go stale): is a conductor already
+# running with this worktree as its cwd? Covers detached --web-bg runs too.
+if [ -d "$WT" ]; then
+    for pid in $(pgrep -f 'conductor run' 2>/dev/null || true); do
+        [ "$(readlink -f "/proc/$pid/cwd" 2>/dev/null || true)" = "$WT" ] || continue
+        echo "a mill run is already active in $WT (pid $pid)." >&2
+        echo "refusing to launch a second run in the same worktree — use a" >&2
+        echo "different <id>, wait for it to finish, or stop it first" >&2
+        echo "(conductor stop --all). --fresh will not override a live run." >&2
+        exit 1
+    done
+fi
+
 if [ "$FRESH" = 1 ] && [ -d "$WT" ]; then
     git worktree remove --force "$WT"
     git branch -D "$BRANCH" 2>/dev/null || true

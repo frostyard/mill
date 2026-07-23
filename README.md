@@ -88,6 +88,10 @@ docs, security invariants, harvest allowlist — lives in a committed
 - **Worktree isolation.** `mill.sh` runs conductor inside
   `.worktrees/mill-<id>`; the main checkout is never touched.
 - **Humans gate the irreversible moments**: plan approval and ship.
+- **Runs are isolated and composable** — worktree, branch, run state, and
+  dashboard port per run; the driver refuses a second run in the same
+  worktree. Run several at once (one per phase, or per project), as long as
+  the repo's own tests avoid fixed host ports and paths.
 
 ## Install
 
