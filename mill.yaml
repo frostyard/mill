@@ -107,6 +107,10 @@ agents:
       - scope: estimate the number of 100-400 line implementation chunks;
         if more than about 12, recommend decomposition into phases
       Do NOT report style, wishes, or hypothetical scope beyond the spec.
+      Do NOT flag details the spec explicitly delegates to a derivation
+      step in the plan (e.g. a table or inventory to be derived from source
+      and reviewed as its own chunk) — unless the delegation itself is
+      unsound. The spec must be implementable, not exhaustive.
 
       Verdict is 'sound' only if there are no grounding, contradiction, or
       ambiguity findings and the scope fits a single run.
