@@ -87,6 +87,10 @@ docs, security invariants, harvest allowlist — lives in a committed
   cross-agent links millify creates).
 - **Worktree isolation.** `mill.sh` runs conductor inside
   `.worktrees/mill-<id>`; the main checkout is never touched.
+- **Stays current with a moving base.** The base is fast-forwarded at launch
+  and the run branch is rebased onto the latest base right before the deep
+  gate, so long runs don't produce stale PRs. Conflicts stop for a human;
+  they are never auto-resolved.
 - **Humans gate the irreversible moments**: plan approval and ship.
 - **Runs are isolated and composable** — worktree, branch, run state, and
   dashboard port per run; the driver refuses a second run in the same

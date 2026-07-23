@@ -151,8 +151,9 @@ def parse_review(text, _depth=0):
 
 # ---------------------------------------------------------------- subcommands
 
-def cmd_init(source):
-    """source: an issue number or a path to a spec file."""
+def cmd_init(source, base_branch="main"):
+    """source: an issue number or a path to a spec file.
+    base_branch: the branch the run was launched from (for the pre-ship rebase)."""
     try:
         cfg = load_config()
     except RuntimeError as e:
@@ -185,6 +186,7 @@ def cmd_init(source):
         prog = load_progress()
         prog.update(attempts=0, review_rounds=0)
         prog.pop("fail_reason", None)
+        prog.setdefault("base_branch", base_branch)  # backfill for older runs
         save_progress(prog)
         journal("resumed", chunk=prog["chunk"])
         out(ok=True, resuming=True, title=title, source=label,
@@ -192,7 +194,8 @@ def cmd_init(source):
     base = sh("git", "rev-parse", "HEAD", check=True).stdout.strip()
     branch = sh("git", "rev-parse", "--abbrev-ref", "HEAD", check=True).stdout.strip()
     save_progress({
-        "base": base, "branch": branch, "title": title, "source": label,
+        "base": base, "branch": branch, "base_branch": base_branch,
+        "title": title, "source": label,
         "plan_rounds": 0, "chunk": 0, "attempts": 0, "review_rounds": 0,
     })
     out(ok=True, resuming=False, title=title, source=label,
@@ -452,6 +455,37 @@ def cmd_harvest_gate():
         fail_reason=fail_reason)
 
 
+def cmd_rebase():
+    """Rebase the run branch onto the latest base branch before the deep gate,
+    so the gate validates the actual integrated result. A long run's base
+    moves under it; this keeps the eventual PR current. Conflicts are never
+    auto-resolved — the rebase is aborted and the run stops for a human."""
+    prog = load_progress()
+    base_branch = prog.get("base_branch", "main")
+    dirty = tree_dirty_outside_mill()
+    if dirty:
+        out(action="abort", error=f"tree dirty before rebase (unexpected): {dirty[:5]}")
+    f = sh("git", "fetch", "origin", base_branch, timeout=120)
+    if f.returncode != 0:
+        # Offline / no remote — proceed on the local base rather than block.
+        out(action="skip", note=f"fetch origin {base_branch} failed; shipping without rebase")
+    target = f"origin/{base_branch}"
+    behind = sh("git", "rev-list", "--count", f"HEAD..{target}").stdout.strip()
+    if behind in ("", "0"):
+        out(action="clean", rebased=False, note="already up to date with base")
+    r = sh("git", "rebase", target, timeout=300)
+    if r.returncode != 0:
+        sh("git", "rebase", "--abort")
+        out(action="conflict", base_branch=base_branch, behind=behind,
+            error=(f"base {base_branch} advanced {behind} commit(s) and the rebase "
+                   f"conflicts. Resolve manually in the worktree:\n"
+                   f"  git rebase {target}   # fix conflicts, git rebase --continue\n"
+                   f"then re-run the mill to finish (deep gate + ship)."))
+    head = sh("git", "rev-parse", "--short", "HEAD").stdout.strip()
+    journal("rebased", onto=target, behind=int(behind), head=head)
+    out(action="clean", rebased=True, behind=int(behind), onto=target)
+
+
 def cmd_deep_gate(deep):
     ok, log = run_gates(deep=(deep == "true"))
     if not ok:
@@ -481,7 +515,8 @@ def cmd_publish():
 
 def main():
     cmds = {
-        "init": (cmd_init, 1),
+        "init": (cmd_init, 2),
+        "rebase": (cmd_rebase, 0),
         "baseline": (cmd_baseline, 0),
         "check-plan": (cmd_check_plan, 0),
         "spec-verdict": (cmd_spec_verdict, 1),
@@ -499,9 +534,10 @@ def main():
     if len(sys.argv) < 2 or sys.argv[1] not in cmds:
         out(ok=False, error=f"usage: mill_state.py <{'|'.join(cmds)}> [args]")
     fn, nargs = cmds[sys.argv[1]]
+    # Pass up to nargs positional args; optional trailing ones (with function
+    # defaults, e.g. init's base_branch) may be omitted. Wrong arity surfaces
+    # as a TypeError caught by the top-level handler.
     args = sys.argv[2:2 + nargs]
-    if len(args) != nargs:
-        out(ok=False, error=f"{sys.argv[1]} expects {nargs} args")
     fn(*args)
 
 

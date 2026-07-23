@@ -70,6 +70,16 @@ other agent, via the cross-agent links) reads them. A deterministic gate
 reverts anything harvest touches outside its allowlist. See
 [self-improvement](/concepts/self-improvement).
 
+## Rebase onto the moving base
+
+A long run's base branch moves under it — other contributors, other
+automation. Right before the deep gate, the run rebases its branch onto the
+latest base, so the gate validates the actual integrated result and the
+eventual PR is current rather than stale. Conflicts are never auto-resolved:
+the rebase aborts, the tree is left intact, and the run stops with
+instructions for a human to resolve and re-run. (`mill.sh` also
+fast-forwards the base to origin at launch, so runs start current too.)
+
 ## Deep gate and ship
 
 The heavyweight gate — typically the containerized test suite — runs last,

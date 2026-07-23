@@ -50,6 +50,7 @@ else
 fi
 WT="$ROOT/.worktrees/mill-$ID"
 BRANCH="mill/$ID"
+BASE_BRANCH=$(git -C "$ROOT" rev-parse --abbrev-ref HEAD)
 
 # Refuse to launch a second run against the same worktree — two conductors
 # writing the same .mill state and branch would corrupt both. Liveness is
@@ -71,6 +72,17 @@ if [ "$FRESH" = 1 ] && [ -d "$WT" ]; then
     git branch -D "$BRANCH" 2>/dev/null || true
 fi
 
+# Start current: fast-forward the base branch to origin before branching, so
+# a fresh run begins from the latest pushed base rather than a stale local
+# snapshot. Best-effort — a diverged or offline base just proceeds locally.
+if [ ! -d "$WT" ]; then
+    if git -C "$ROOT" fetch --quiet origin "$BASE_BRANCH" 2>/dev/null; then
+        git -C "$ROOT" merge --ff-only --quiet "origin/$BASE_BRANCH" 2>/dev/null \
+            && echo "→ base $BASE_BRANCH fast-forwarded to origin" \
+            || echo "→ base $BASE_BRANCH not fast-forwardable to origin; using local"
+    fi
+fi
+
 if [ -d "$WT" ]; then
     echo "→ reusing existing worktree $WT (use --fresh to start over)"
 else
@@ -86,5 +98,6 @@ exec conductor run "$MILL_HOME/mill.yaml" \
     -i "source=$SOURCE" \
     -i "deep_gate=$DEEP" \
     -i "open_pr=$OPEN_PR" \
+    -i "base_branch=$BASE_BRANCH" \
     --log-file auto \
     "${FLAGS[@]}"

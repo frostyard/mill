@@ -42,6 +42,11 @@ workflow:
       required: false
       default: "true"
       description: Push the branch and open a PR at the end (true/false)
+    base_branch:
+      type: string
+      required: false
+      default: "main"
+      description: Branch the run was launched from; the pre-ship rebase targets origin/<this>
 
 agents:
   # ---------------------------------------------------------------- ingest
@@ -49,7 +54,7 @@ agents:
     type: script
     description: Fetch the spec and initialize .mill state
     command: python3
-    args: ["{{ workflow.dir }}/mill_state.py", "init", "{{ workflow.input.source }}"]
+    args: ["{{ workflow.dir }}/mill_state.py", "init", "{{ workflow.input.source }}", "{{ workflow.input.base_branch }}"]
     timeout: 90
     routes:
       - to: baseline
@@ -681,7 +686,27 @@ agents:
     args: ["{{ workflow.dir }}/mill_state.py", "harvest-gate"]
     timeout: 60
     routes:
+      - to: rebase
+
+  # A long run's base branch moves under it (other contributors, other
+  # automation). Rebase onto the latest base BEFORE the deep gate, so the
+  # gate validates the actual integrated result and the eventual PR is
+  # current. Conflicts are never auto-resolved — the run stops for a human.
+  - name: rebase
+    type: script
+    description: Rebase the run branch onto the latest base before shipping
+    command: python3
+    args: ["{{ workflow.dir }}/mill_state.py", "rebase"]
+    timeout: 420
+    routes:
       - to: deep_gate
+        when: "{{ rebase.output.action in ['clean', 'skip'] }}"
+      - to: rebase_conflict
+
+  - name: rebase_conflict
+    type: terminate
+    status: failed
+    reason: "{{ rebase.output.error }}"
 
   - name: deep_gate
     type: script
