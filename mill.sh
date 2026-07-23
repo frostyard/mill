@@ -9,6 +9,8 @@
 #   --no-pr    never push or open a PR, keep the branch local
 #   --no-deep  final gate runs the chunk gates instead of [gates].deep
 #   --fresh    discard an existing worktree for this source and start over
+#   --model=M  implementer model for implement/fix agents (default sonnet;
+#              e.g. --model=opus for hard reasoning-heavy chunks)
 #
 # Requires a .mill.toml at the repo root (run the millify skill to create
 # one) and the conductor CLI with the claude-agent-sdk provider installed.
@@ -25,7 +27,7 @@ usage() { grep '^#' "$0" | sed 's/^# \{0,1\}//' | head -12; exit 1; }
 
 [ $# -ge 1 ] || usage
 SOURCE="$1"; shift
-AUTO=0 OPEN_PR=true DEEP=true FRESH=0 WEB=0
+AUTO=0 OPEN_PR=true DEEP=true FRESH=0 WEB=0 IMPL_MODEL=""
 for arg in "$@"; do
     case "$arg" in
         --auto)    AUTO=1 ;;
@@ -33,6 +35,7 @@ for arg in "$@"; do
         --no-deep) DEEP=false ;;
         --fresh)   FRESH=1 ;;
         --web)     WEB=1 ;;
+        --model=*) IMPL_MODEL="${arg#--model=}" ;;
         *) usage ;;
     esac
 done
@@ -93,6 +96,7 @@ cd "$WT"
 FLAGS=()
 [ "$AUTO" = 1 ] && FLAGS+=(--skip-gates)
 [ "$WEB" = 1 ] && FLAGS+=(--web-bg)
+[ -n "$IMPL_MODEL" ] && FLAGS+=(-i "implement_model=$IMPL_MODEL")
 
 exec conductor run "$MILL_HOME/mill.yaml" \
     -i "source=$SOURCE" \

@@ -47,6 +47,11 @@ workflow:
       required: false
       default: "main"
       description: Branch the run was launched from; the pre-ship rebase targets origin/<this>
+    implement_model:
+      type: string
+      required: false
+      default: "sonnet"
+      description: Model for the implement/fix agents (bump to opus for hard chunks)
 
 agents:
   # ---------------------------------------------------------------- ingest
@@ -349,6 +354,7 @@ agents:
       - to: implement
 
   - name: implement
+    model: "{{ workflow.input.implement_model }}"
     max_agent_iterations: 200
     description: Implement exactly one chunk
     prompt: |
@@ -411,6 +417,7 @@ agents:
       - to: fix
 
   - name: fix
+    model: "{{ workflow.input.implement_model }}"
     max_agent_iterations: 150
     description: Fix the failing quality gate
     prompt: |
