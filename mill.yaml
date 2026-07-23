@@ -124,7 +124,7 @@ agents:
     type: script
     description: Route on spec verdict; findings land in .mill/spec_findings.json
     command: python3
-    args: ["scripts/mill_state.py", "spec-verdict",
+    args: ["{{ workflow.dir }}/mill_state.py", "spec-verdict",
            "{{ spec_review.output.result }}"]
     timeout: 60
     routes:
@@ -528,7 +528,7 @@ agents:
     type: script
     description: Enforce allowlist, commit lessons to the branch
     command: python3
-    args: ["scripts/mill_state.py", "harvest-gate"]
+    args: ["{{ workflow.dir }}/mill_state.py", "harvest-gate"]
     timeout: 60
     routes:
       - to: run_failed
