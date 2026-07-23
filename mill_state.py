@@ -164,13 +164,25 @@ def cmd_init(source):
     if not spec.strip():
         out(ok=False, error=f"empty spec from {label}")
     (MILL / "spec.md").write_text(spec)
+    # Resume: an existing plan + progress means committed chunks are on the
+    # branch. Preserve the cursor; the workflow skips straight back to the
+    # chunk loop. (--fresh discards the worktree for a true restart.)
+    if PROGRESS.is_file() and (MILL / "plan.json").is_file():
+        prog = load_progress()
+        prog.update(attempts=0, review_rounds=0)
+        prog.pop("fail_reason", None)
+        save_progress(prog)
+        journal("resumed", chunk=prog["chunk"])
+        out(ok=True, resuming=True, title=title, source=label,
+            chunk=prog["chunk"])
     base = sh("git", "rev-parse", "HEAD", check=True).stdout.strip()
     branch = sh("git", "rev-parse", "--abbrev-ref", "HEAD", check=True).stdout.strip()
     save_progress({
         "base": base, "branch": branch, "title": title, "source": label,
         "plan_rounds": 0, "chunk": 0, "attempts": 0, "review_rounds": 0,
     })
-    out(ok=True, title=title, source=label, spec_chars=len(spec))
+    out(ok=True, resuming=False, title=title, source=label,
+        spec_chars=len(spec))
 
 
 def run_gates(deep=False):
@@ -354,13 +366,13 @@ def cmd_review_gate(review_text):
     save_progress(prog)
     journal("chunk_revise", chunk=prog["chunk"], rounds=prog["review_rounds"],
             objections=json.loads(objections_json))
+    (MILL / "objections.json").write_text(objections_json)
     max_rounds = load_config()["limits"]["review_rounds"]
     if prog["review_rounds"] > max_rounds:
         prog["fail_reason"] = (f"chunk {prog['chunk']} not approved after "
                                f"{max_rounds} review rounds")
         save_progress(prog)
         out(action="abort", error=prog["fail_reason"])
-    (MILL / "objections.json").write_text(objections_json)
     out(action="revise", rounds=prog["review_rounds"])
 
 

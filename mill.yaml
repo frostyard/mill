@@ -68,6 +68,8 @@ agents:
     args: ["{{ workflow.dir }}/mill_state.py", "baseline"]
     timeout: 1800
     routes:
+      - to: select_chunk
+        when: "{{ baseline.output.gate == 'pass' and ingest.output.resuming }}"
       - to: spec_review
         when: "{{ baseline.output.gate == 'pass' }}"
       - to: baseline_red
@@ -362,6 +364,10 @@ agents:
       - Leave the tree building and tests passing.
       - Do NOT run git commit/push/checkout — a deterministic step owns git.
       - Do NOT write into .mill/.
+
+      A previous attempt at this chunk may have left uncommitted changes in
+      the tree — check `git status` and `git diff` and build on or correct
+      them rather than assuming a clean slate.
 
       {% if select_chunk.output.objections %}
       A reviewer rejected the previous attempt at this chunk. Address every
