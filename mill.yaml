@@ -758,7 +758,10 @@ agents:
     value: "{{ workflow.input.open_pr }}"
     routes:
       - to: publish
-        when: "{{ workflow.input.open_pr == 'true' }}"
+        # open_pr arrives as a JSON boolean (conductor coerces -i open_pr=true),
+        # so compare via string-cast, not against the literal 'true' — a bare
+        # `== 'true'` fails for boolean True and silently routes to done_local.
+        when: "{{ workflow.input.open_pr | string | lower == 'true' }}"
       - to: done_local
 
   - name: done_local
