@@ -24,6 +24,12 @@ worktree** (same id, same repo): a live conductor already using that
 worktree as its cwd blocks the launch, so you can't corrupt an in-flight
 run — not even with `--fresh`.
 
+[`spec-prep`](/concepts/spec-prep) runs in the repo root rather than a
+worktree, so it keeps its state in its own `.mill-prep/` directory (never an
+implementation run's `.mill/`) and refuses a second `spec-prep` in the same
+checkout. A `spec-prep` and a `mill` run can execute together, and `spec-prep`
+runs in different checkouts never contend.
+
 ## What the mill does NOT isolate
 
 The mill isolates the filesystem and git. It does **not** give each run its

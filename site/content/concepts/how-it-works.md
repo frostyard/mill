@@ -27,9 +27,14 @@ doesn't have? Does it contradict itself — especially universal invariants
 ("every", "always", "never") that current code doesn't satisfy and that lack
 a transition rule? Is it ambiguous in ways that change the work? Is it small
 enough to converge (roughly a dozen chunks)? Findings escalate to a human
-immediately; in `--auto` runs they abort. Fix the spec at its source and
-rerun — that's cheaper than discovering the same defects through six rounds
-of plan review.
+immediately; in `--auto` runs they abort. Fixing the spec at its source is
+cheaper than discovering the same defects through six rounds of plan review.
+
+For a spec that needs real work first, [`spec-prep`](/concepts/spec-prep) is
+an optional pre-flight that hardens it to a millable state in its own cheap
+loop — resolving blocking defects against source truth and converging on "no
+blocking findings" rather than the unreachable "zero findings" — so the run
+below clears this gate on the first pass instead of aborting and rerunning.
 
 ## Plan, adversarially reviewed
 

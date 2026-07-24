@@ -29,8 +29,10 @@ echo "✓ spec-prep -> $BIN_DIR/spec-prep"
 
 if [ -d "$HOME/.claude" ]; then
     mkdir -p "$HOME/.claude/skills"
-    ln -sfn "$HOME_DIR/skills/millify" "$HOME/.claude/skills/millify"
-    echo "✓ millify skill -> ~/.claude/skills/millify"
+    for skill in millify drive-mill; do
+        ln -sfn "$HOME_DIR/skills/$skill" "$HOME/.claude/skills/$skill"
+        echo "✓ $skill skill -> ~/.claude/skills/$skill"
+    done
 fi
 
 command -v conductor >/dev/null 2>&1 || cat <<'MSG'
