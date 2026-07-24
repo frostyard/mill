@@ -6,11 +6,13 @@ order: 20
 ---
 
 ```sh
-mill <issue#|spec-file> [--auto] [--web] [--no-pr] [--no-deep] [--fresh]
+mill <issue#|spec-file> [--auto] [--web] [--no-pr] [--no-deep] [--fresh] [--model=M]
 ```
 
 The argument is either a GitHub issue number (fetched with `gh` from the
-current repository) or a path to a markdown spec file.
+current repository) or a path to a markdown spec file. To harden a rough spec
+before running, see [`spec-prep`](/concepts/spec-prep), whose hardened output
+is a spec file you pass here.
 
 | Flag | Effect |
 | --- | --- |
@@ -19,6 +21,7 @@ current repository) or a path to a markdown spec file.
 | `--no-pr` | Never push or open a PR; the branch stays local regardless of the ship decision. |
 | `--no-deep` | The final gate re-runs the fast chunk gates instead of `[gates].deep`. |
 | `--fresh` | Discard an existing worktree and branch for this source and start over. |
+| `--model=M` | Model for the implement/fix agents (default `sonnet`); bump to `opus` for reasoning-heavy chunks like parsers and contract tests. Review models are fixed. |
 
 ## Where things live
 

@@ -2,7 +2,7 @@
 title: Design rules
 description: The invariants that make mill runs trustworthy.
 group: Concepts
-order: 6
+order: 7
 ---
 
 Each rule here exists because its absence produced a concrete failure —
@@ -16,6 +16,15 @@ source truth, internally consistent, unambiguous, and sized to converge.
 Universal invariants over existing code must carry transition rules, or
 they are unsatisfiable incrementally and two honest models will spend six
 rounds proving it.
+
+What blocks is severity, not count. An adversarial reader of a real codebase
+can almost always name one more edge case, so "zero findings" is an asymptote
+— demanding it just trades six rounds of plan review for six of spec review.
+The bar is *no blocking or high-severity defect*; medium and low findings are
+recorded as accepted interpretations and carried into planning, where three
+downstream review gates still cover them. The optional
+[`spec-prep`](/concepts/spec-prep) pre-flight applies exactly this bar to
+harden a spec to a millable state before a run starts.
 
 ## Scripts own control flow
 

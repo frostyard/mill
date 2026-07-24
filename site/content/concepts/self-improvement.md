@@ -2,7 +2,7 @@
 title: Self-improvement
 description: How runs turn friction into policy.
 group: Concepts
-order: 7
+order: 8
 ---
 
 Mistakes should be made once, then become policy. The mill closes that loop

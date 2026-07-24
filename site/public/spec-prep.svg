@@ -1,0 +1,88 @@
+<svg viewBox="0 0 720 250" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" role="img" aria-label="The spec-prep pre-flight loop">
+  <style>
+    .box   { fill:#ffffff; stroke-width:1.6; }
+    .t     { fill:#1f2937; font-size:12.5px; font-weight:600; text-anchor:middle; }
+    .s     { fill:#6b7280; font-size:10px; text-anchor:middle; }
+    .lbl   { fill:#6b7280; font-size:10px; font-style:italic; }
+    .leg   { fill:#1f2937; font-size:11px; }
+    .cap   { fill:#6b7280; font-size:10.5px; font-style:italic; }
+    .script{ stroke:#64748b; }
+    .claude{ stroke:#d97757; }
+    .gpt   { stroke:#6366f1; }
+    .flow  { stroke:#8b949e; stroke-width:1.5; fill:none; }
+    .loop  { stroke:#8b949e; stroke-width:1.3; fill:none; stroke-dasharray:4 3; }
+    .chip  { fill:#ffffff; stroke-width:2; }
+    @media (prefers-color-scheme: dark) {
+      .box   { fill:#161b22; }
+      .t     { fill:#e6edf3; }
+      .leg   { fill:#e6edf3; }
+      .s, .lbl, .cap { fill:#8b949e; }
+      .script{ stroke:#94a3b8; }
+      .claude{ stroke:#e8937e; }
+      .gpt   { stroke:#8b95f9; }
+      .chip  { fill:#161b22; }
+    }
+  </style>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#8b949e"/>
+    </marker>
+  </defs>
+
+  <!-- top row: spec -> review -> gate -> hardened spec -> mill -->
+  <rect class="box script" x="20" y="52" width="84" height="48" rx="8"/>
+  <text class="t" x="62" y="73">spec</text>
+  <text class="s" x="62" y="89">issue / file</text>
+
+  <rect class="box gpt" x="128" y="52" width="108" height="48" rx="8"/>
+  <text class="t" x="182" y="73">review</text>
+  <text class="s" x="182" y="89">vs source truth</text>
+
+  <rect class="box script" x="260" y="52" width="92" height="48" rx="8"/>
+  <text class="t" x="306" y="73">gate</text>
+  <text class="s" x="306" y="89">by severity</text>
+
+  <rect class="box script" x="392" y="52" width="122" height="48" rx="8"/>
+  <text class="t" x="453" y="73">hardened spec</text>
+  <text class="s" x="453" y="89">.mill-prep</text>
+
+  <rect class="box claude" x="546" y="52" width="104" height="48" rx="8"/>
+  <text class="t" x="598" y="73">the mill</text>
+  <text class="s" x="598" y="89">implements</text>
+
+  <line class="flow" x1="104" y1="76" x2="124" y2="76" marker-end="url(#a)"/>
+  <line class="flow" x1="236" y1="76" x2="256" y2="76" marker-end="url(#a)"/>
+  <line class="flow" x1="352" y1="76" x2="388" y2="76" marker-end="url(#a)"/>
+  <text class="lbl" x="370" y="44" text-anchor="middle">no blocking</text>
+  <line class="flow" x1="514" y1="76" x2="542" y2="76" marker-end="url(#a)"/>
+
+  <!-- harden, below, looping back to review -->
+  <rect class="box claude" x="150" y="152" width="128" height="46" rx="8"/>
+  <text class="t" x="214" y="173">harden</text>
+  <text class="s" x="214" y="188">resolve blocking</text>
+
+  <!-- gate -> harden (blocking) -->
+  <path class="flow" d="M 300 100 C 296 124 262 130 250 150" marker-end="url(#a)"/>
+  <text class="lbl" x="300" y="126">blocking?</text>
+  <!-- harden -> review (bounded re-review) -->
+  <path class="loop" d="M 176 152 C 150 130 150 118 176 100" marker-end="url(#a)"/>
+  <text class="lbl" x="120" y="128" text-anchor="middle">re-review</text>
+  <text class="lbl" x="120" y="140" text-anchor="middle">(bounded)</text>
+
+  <!-- gate -> stall (budget spent) -->
+  <rect class="box script" x="352" y="152" width="126" height="46" rx="8"/>
+  <text class="t" x="415" y="173">stall</text>
+  <text class="s" x="415" y="188">a decision is needed</text>
+  <path class="loop" d="M 330 100 C 350 126 388 130 405 150" marker-end="url(#a)"/>
+  <text class="lbl" x="392" y="126">budget spent</text>
+
+  <!-- legend -->
+  <rect class="chip script" x="20"  y="222" width="12" height="12" rx="3"/>
+  <text class="leg" x="39" y="232">script &#8212; referees severity</text>
+  <rect class="chip gpt" x="212" y="222" width="12" height="12" rx="3"/>
+  <text class="leg" x="231" y="232">GPT &#8212; reviews</text>
+  <rect class="chip claude" x="340" y="222" width="12" height="12" rx="3"/>
+  <text class="leg" x="359" y="232">Claude &#8212; hardens</text>
+  <line class="loop" x1="500" y1="228" x2="530" y2="228"/>
+  <text class="leg" x="536" y="232">bounded loop</text>
+</svg>

@@ -33,6 +33,12 @@
     </marker>
   </defs>
 
+  <!-- optional pre-flight: spec-prep hardens the spec before ingest -->
+  <rect class="box script" x="24" y="6" width="104" height="30" rx="8" stroke-dasharray="4 3"/>
+  <text class="t" x="76" y="25">spec-prep</text>
+  <text class="lbl" x="140" y="24">optional pre-flight &#8212; hardens the spec first</text>
+  <path class="flow" d="M 66 36 V 46" marker-end="url(#a)"/>
+
   <!-- ================= row 1 : spec to approved plan ================= -->
   <rect class="box script" x="24" y="48" width="84" height="50" rx="8"/>
   <text class="t" x="66" y="69">ingest</text>
