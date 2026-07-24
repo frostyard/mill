@@ -7,8 +7,10 @@ fail() { echo "✗ $1" >&2; exit 1; }
 
 # 1. Every script step must resolve the helper via workflow.dir, never a
 #    repo-relative path (the engine runs from its install dir).
-grep -q '"scripts/mill_state.py"' mill.yaml \
-    && fail 'mill.yaml references scripts/mill_state.py — use {{ workflow.dir }}/mill_state.py'
+for wf in mill.yaml spec_prep.yaml; do
+    grep -q '"scripts/mill_state.py"' "$wf" \
+        && fail "$wf references scripts/mill_state.py — use {{ workflow.dir }}/mill_state.py"
+done
 echo "✓ script paths use workflow.dir"
 
 # 2. Python syntax.
@@ -16,7 +18,7 @@ python3 -c "import ast; ast.parse(open('mill_state.py').read())"
 echo "✓ mill_state.py parses"
 
 # 3. Shell syntax.
-bash -n mill.sh && bash -n install.sh
+bash -n mill.sh && bash -n spec_prep.sh && bash -n install.sh
 echo "✓ shell scripts parse"
 
 # 4. parse_review normalization contract.
@@ -40,10 +42,33 @@ for text, want in cases:
 print("✓ parse_review contract holds")
 EOF
 
-# 5. conductor schema validation, when conductor is available.
+# 5. spec-prep severity-routing contract: only blocking/high block; medium/low
+#    converge; the round budget bounds the loop; unparseable never converges.
+python3 - <<'EOF'
+import importlib.util
+spec = importlib.util.spec_from_file_location("ms", "mill_state.py")
+m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+H = lambda s: {"severity": s, "detail": "x"}
+cases = [
+    # (verdict, findings, rounds, budget) -> action
+    ("needs_clarification", [H("medium"), H("low")], 0, 5, "finalize"),
+    ("needs_clarification", [H("high")],             0, 5, "harden"),
+    ("needs_clarification", [H("blocking"), H("medium")], 1, 5, "harden"),
+    ("needs_clarification", [H("high")],             5, 5, "stall"),
+    ("sound", [], 0, 5, "finalize"),
+    ("unparseable", [], 0, 5, "harden"),   # no findings but unparseable != converged
+]
+for verdict, findings, rounds, budget, want in cases:
+    action, _, _ = m._prep_decision(verdict, findings, rounds, budget)
+    assert action == want, f"_prep_decision({verdict},{[f['severity'] for f in findings]},{rounds},{budget}) = {action}, want {want}"
+print("✓ spec-prep routing contract holds")
+EOF
+
+# 6. conductor schema validation, when conductor is available.
 if command -v conductor >/dev/null 2>&1; then
     conductor validate mill.yaml >/dev/null
-    echo "✓ conductor validate"
+    conductor validate spec_prep.yaml >/dev/null
+    echo "✓ conductor validate (mill.yaml, spec_prep.yaml)"
 else
     echo "- conductor not installed; skipping schema validation"
 fi

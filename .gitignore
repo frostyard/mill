@@ -2,3 +2,5 @@ site/node_modules/
 site/dist/
 site/.astro/
 .worktrees/
+__pycache__/
+*.pyc

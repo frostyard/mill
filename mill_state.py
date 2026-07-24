@@ -16,18 +16,29 @@ State lives in .mill/ inside the worktree the mill runs in:
   final_report.md  final review verdicts + compliance matrix
 """
 import json
+import os
 import pathlib
 import re
 import subprocess
 import sys
 import tomllib
 
-MILL = pathlib.Path(".mill")
+# The state dir is overridable so the pre-flight spec-prep phase can use its
+# own directory (.mill-prep) without colliding with an implementation run's
+# .mill in the same checkout, and so concurrent runs never share state.
+MILL = pathlib.Path(os.environ.get("MILL_DIR", ".mill"))
 PROGRESS = MILL / "progress.json"
 CONFIG = pathlib.Path(".mill.toml")
 
 GATE_LOG_TAIL = 4000
-DEFAULT_LIMITS = {"plan_rounds": 3, "gate_attempts": 3, "review_rounds": 2}
+DEFAULT_LIMITS = {"plan_rounds": 3, "gate_attempts": 3, "review_rounds": 2,
+                  "spec_prep_rounds": 5}
+
+# Finding severities that must be resolved before a spec is millable. Medium
+# and low findings are recorded as accepted interpretations and carried into
+# planning rather than blocking — demanding zero findings from an adversarial
+# source-truth reviewer is an asymptote it never reaches.
+SEVERITY_HARD = {"blocking", "high"}
 
 
 def load_config():
@@ -300,6 +311,139 @@ def cmd_spec_verdict(review_text):
         summary="; ".join(str(f.get("detail", ""))[:100] for f in findings[:4]))
 
 
+# ------------------------------------------------------ spec-prep (pre-flight)
+# A standalone loop that hardens a spec to a millable state BEFORE the
+# implementation mill spends planning tokens. It reviews against source truth,
+# then a hardener agent rewrites the spec to resolve blocking/high findings
+# (grounded in the code), looping until none remain. Medium/low findings are
+# recorded as accepted interpretations, not blockers. Runs in its own MILL_DIR
+# (.mill-prep), touches no tracked files, needs no worktree or baseline.
+
+def _severity(finding):
+    return str(finding.get("severity", "")).strip().lower()
+
+
+def _prep_progress():
+    return load_progress() if PROGRESS.is_file() else {
+        "rounds": 0, "source": "", "title": ""}
+
+
+def _prep_decision(verdict, findings, rounds, budget):
+    """Pure routing policy for the spec-prep loop, split out so it is testable
+    without git or the filesystem. `rounds` is the number of harden rounds
+    already taken. Converged (no blocking/high finding) -> finalize; otherwise
+    harden until the round budget is spent, then stall. An unparseable review
+    never counts as converged."""
+    hard = [f for f in findings if _severity(f) in SEVERITY_HARD]
+    soft = [f for f in findings if _severity(f) not in SEVERITY_HARD]
+    if verdict != "unparseable" and not hard:
+        return "finalize", hard, soft
+    if rounds + 1 > budget:
+        return "stall", hard, soft
+    return "harden", hard, soft
+
+
+def cmd_spec_prep_init(source):
+    """Fetch the spec into MILL/spec.md and initialize round state. source is
+    an issue number or a spec-file path, exactly as `init` accepts."""
+    try:
+        cfg = load_config()
+    except RuntimeError as e:
+        out(ok=False, error=str(e))
+    MILL.mkdir(exist_ok=True)
+    (MILL / ".gitignore").write_text("*\n")
+    (MILL / "config.json").write_text(json.dumps(cfg, indent=2))
+    if re.fullmatch(r"\d+", source):
+        p = sh("gh", "issue", "view", source, "--json", "title,body", timeout=60)
+        if p.returncode != 0:
+            out(ok=False, error=f"gh issue view {source}: {p.stderr.strip()[:300]}")
+        data = json.loads(p.stdout)
+        title, spec = data["title"], data["body"]
+        label = f"issue #{source}"
+    else:
+        path = pathlib.Path(source)
+        if not path.is_file():
+            out(ok=False, error=f"spec file not found: {source}")
+        spec = path.read_text()
+        title = spec.strip().splitlines()[0].lstrip("# ").strip()[:80]
+        label = source
+    if not spec.strip():
+        out(ok=False, error=f"empty spec from {label}")
+    (MILL / "spec.md").write_text(spec)
+    save_progress({"rounds": 0, "source": label, "title": title})
+    journal("spec_prep_init", source=label, title=title, spec_chars=len(spec))
+    out(ok=True, source=label, title=title, spec_chars=len(spec))
+
+
+def cmd_spec_prep_gate(review_text):
+    """Route the spec-prep loop on severity-classified findings: converged
+    (no blocking/high) -> finalize; else -> harden, up to the round budget,
+    then -> stall for a human."""
+    verdict, payload = parse_review(review_text)
+    dirty = tree_dirty_outside_mill()  # reviewer only reads; scrub any leak
+    if dirty:
+        sh("git", "checkout", "--", ".")
+        sh("git", "clean", "-fd")
+    findings = payload.get("findings", [])
+    est = payload.get("estimated_chunks", 0)
+    prog = _prep_progress()
+    budget = load_config()["limits"]["spec_prep_rounds"]
+    action, hard, soft = _prep_decision(verdict, findings, prog["rounds"], budget)
+    (MILL / "spec_findings.json").write_text(json.dumps(
+        {"verdict": verdict, "estimated_chunks": est, "findings": findings,
+         "blocking": hard, "accepted": soft, "round": prog["rounds"]}, indent=2))
+    journal("spec_prep_review", verdict=verdict, round=prog["rounds"],
+            action=action, blocking=len(hard), accepted=len(soft),
+            estimated_chunks=est)
+    if action == "finalize":
+        (MILL / "accepted_interpretations.json").write_text(
+            json.dumps(soft, indent=2))
+        out(action="finalize", blocking=0, accepted=len(soft),
+            estimated_chunks=est, rounds=prog["rounds"])
+    prog["rounds"] += 1
+    save_progress(prog)
+    if action == "stall":
+        out(action="stall", blocking=len(hard), rounds=prog["rounds"],
+            summary="; ".join(str(f.get("detail", ""))[:100] for f in hard[:5]))
+    out(action="harden", blocking=len(hard), round=prog["rounds"],
+        estimated_chunks=est)
+
+
+def cmd_spec_prep_finalize(dest):
+    """Write the hardened spec to `dest` with a title header (so a file-sourced
+    mill run derives a good title) and an appended record of the interpretations
+    and decisions made while hardening."""
+    prog = _prep_progress()
+    spec = (MILL / "spec.md").read_text().rstrip()
+    title = prog.get("title") or "specification"
+    # Issue bodies carry no heading (the title is separate metadata) so give
+    # them one for a file-sourced mill run; a spec that already opens with a
+    # markdown heading keeps its own.
+    first = next((ln for ln in spec.splitlines() if ln.strip()), "")
+    parts = [spec] if first.lstrip().startswith("#") else [f"# {title}", "", spec]
+    accepted, decisions = [], []
+    if (MILL / "accepted_interpretations.json").is_file():
+        accepted = json.loads((MILL / "accepted_interpretations.json").read_text())
+    if (MILL / "spec_decisions.json").is_file():
+        decisions = json.loads((MILL / "spec_decisions.json").read_text())
+    if accepted or decisions:
+        parts += ["", "---", "", "## Spec-prep record", "",
+                  "_Interpretations and decisions fixed during pre-flight "
+                  "hardening. Review before implementation; override by editing "
+                  "this spec._", ""]
+        for d in decisions:
+            parts.append(f"- **Decision:** {d.get('question', '')} → "
+                         f"{d.get('choice', '')} ({d.get('rationale', '')})")
+        for a in accepted:
+            parts.append(f"- **Accepted ({a.get('severity', '')}):** "
+                         f"{str(a.get('detail', ''))[:200]}")
+    pathlib.Path(dest).write_text("\n".join(parts) + "\n")
+    journal("spec_prep_done", dest=dest, accepted=len(accepted),
+            decisions=len(decisions))
+    out(ok=True, dest=dest, accepted=len(accepted), decisions=len(decisions),
+        title=title)
+
+
 def cmd_plan_verdict(review_text):
     verdict, payload = parse_review(review_text)
     objections_json = json.dumps(payload.get("objections", []))
@@ -520,6 +664,9 @@ def main():
         "baseline": (cmd_baseline, 0),
         "check-plan": (cmd_check_plan, 0),
         "spec-verdict": (cmd_spec_verdict, 1),
+        "spec-prep-init": (cmd_spec_prep_init, 1),
+        "spec-prep-gate": (cmd_spec_prep_gate, 1),
+        "spec-prep-finalize": (cmd_spec_prep_finalize, 1),
         "plan-verdict": (cmd_plan_verdict, 1),
         "select": (cmd_select, 0),
         "impl-gate": (cmd_impl_gate, 0),

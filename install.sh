@@ -3,9 +3,9 @@
 #
 #   curl -sSfL https://raw.githubusercontent.com/frostyard/mill/main/install.sh | sh
 #
-# Installs to ~/.local/share/frostyard-mill, symlinks the `mill` command into
-# ~/.local/bin, and (if ~/.claude exists) links the millify skill so Claude
-# Code can set up new repositories.
+# Installs to ~/.local/share/frostyard-mill, symlinks the `mill` and
+# `spec-prep` commands into ~/.local/bin, and (if ~/.claude exists) links the
+# millify skill so Claude Code can set up new repositories.
 set -eu
 
 REPO="https://github.com/frostyard/mill.git"
@@ -22,8 +22,10 @@ fi
 
 mkdir -p "$BIN_DIR"
 ln -sf "$HOME_DIR/mill.sh" "$BIN_DIR/mill"
-chmod +x "$HOME_DIR/mill.sh"
+ln -sf "$HOME_DIR/spec_prep.sh" "$BIN_DIR/spec-prep"
+chmod +x "$HOME_DIR/mill.sh" "$HOME_DIR/spec_prep.sh"
 echo "✓ mill -> $BIN_DIR/mill"
+echo "✓ spec-prep -> $BIN_DIR/spec-prep"
 
 if [ -d "$HOME/.claude" ]; then
     mkdir -p "$HOME/.claude/skills"

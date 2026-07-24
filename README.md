@@ -68,7 +68,10 @@ docs, security invariants, harvest allowlist — lives in a committed
 - **The spec is validated before anything else** — a rival model checks it
   against source truth for grounding, contradictions (universal invariants
   need transition rules), ambiguity, and convergible scope, escalating to a
-  human before any planning spend.
+  human before any planning spend. A separate `spec-prep` pre-flight can
+  harden a spec to a millable state first, resolving blocking findings in a
+  cheap loop (severity-aware: medium/low don't block) so real work isn't a
+  series of aborted launches.
 - **All control flow is deterministic.** Loop counters, gate results, and
   every git operation live in `mill_state.py`; LLM steps never decide when a
   loop ends and never run git. Bounded retries everywhere; exhaustion
@@ -121,6 +124,32 @@ build system, generates `.mill.toml`, seeds the skills directory, and wires
 the cross-agent surfaces (`CLAUDE.md`, `.github/copilot-instructions.md`,
 `.agents`, `GEMINI.md` → all reading the canonical `AGENTS.md`). Or copy
 `mill.toml.example` to `.mill.toml` and edit by hand.
+
+## Harden a spec first (optional pre-flight)
+
+The mill validates the spec at the start of every run, but a spec with real
+defects fails that gate and forces an abort → edit → full rerun cycle — and
+because the reviewer reads *source truth*, a large spec can surface a fresh
+defect on each pass. `spec-prep` moves that hardening into its own cheap loop
+that runs to convergence *before* you spend planning tokens:
+
+```sh
+spec-prep 58               # harden issue #58 -> .mill-prep/spec.hardened.md
+spec-prep 58 --web         # same, with the live dashboard
+mill .mill-prep/spec.hardened.md --no-pr    # then implement the hardened spec
+```
+
+It reviews the spec against the code, then a hardener agent rewrites it to
+resolve every **blocking/high** finding — grounded in the actual files and
+repo precedent — and loops until none remain. Medium/low findings are
+recorded as accepted interpretations rather than blocking (demanding zero
+findings from an adversarial source reader is an asymptote; three more review
+gates sit downstream). Genuine product decisions that source truth can't
+settle are made conservatively and logged to `.mill-prep/spec_decisions.json`;
+put authoritative answers in `.mill-prep/spec_answers.md` to steer them. The
+result is a hardened spec file (with a `## Spec-prep record` of every
+interpretation and decision) that the mill consumes directly. No worktree, no
+baseline — it only reads source truth and rewrites its own `.mill-prep/spec.md`.
 
 ## Run
 
