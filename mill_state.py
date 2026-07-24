@@ -397,7 +397,7 @@ def cmd_commit_chunk():
     prog = load_progress()
     chunks = json.loads((MILL / "plan.json").read_text())["chunks"]
     chunk = chunks[prog["chunk"]]
-    msg = f"mill: chunk {prog['chunk'] + 1}/{len(chunks)} — {chunk['title']}\n\nCo-Authored-By: mill <noreply@frostyard>"
+    msg = f"chore(mill): chunk {prog['chunk'] + 1}/{len(chunks)} — {chunk['title']}\n\nCo-Authored-By: mill <noreply@frostyard>"
     p = sh("git", "commit", "-m", msg)
     if p.returncode != 0:
         out(ok=False, error=f"git commit failed: {p.stderr.strip()[:300]}")
@@ -445,7 +445,7 @@ def cmd_harvest_gate():
             fail_reason=fail_reason)
     sh("git", "add", "-A", check=True)
     p = sh("git", "commit", "-m",
-           "mill: harvest — agent skills learned during this run\n\n"
+           "chore(mill): harvest — agent skills learned during this run\n\n"
            "Co-Authored-By: mill <noreply@frostyard>")
     if p.returncode != 0:
         out(committed=False, files=[], reverted=reverted,
@@ -506,7 +506,7 @@ def cmd_publish():
     if re.fullmatch(r"issue #\d+", prog["source"]):
         parts.insert(1, f"Closes #{prog['source'].split('#')[1]}\n")
     body.write_text("\n".join(parts))
-    p = sh("gh", "pr", "create", "--title", f"mill: {prog['title']}",
+    p = sh("gh", "pr", "create", "--title", prog["title"],
            "--body-file", str(body), timeout=120)
     if p.returncode != 0:
         out(ok=False, error=f"gh pr create failed: {p.stderr.strip()[:300]}")
