@@ -32,6 +32,18 @@ import tomllib
 # instead of trusting an implicit, drifting interface.
 ENGINE_VERSION = "0.1.0"
 STATE_SCHEMA = 1
+# Conductor versions this engine is known-good against — the engine below
+# our engine. A positive mismatch blocks at init (a silent conductor upgrade
+# costs a 90-minute run to discover); undetectable version proceeds with a
+# journaled warning (fail-open on detection, fail-closed on mismatch).
+# Escape hatch for deliberate upgrades: MILL_SKIP_CONDUCTOR_CHECK=1.
+CONDUCTOR_SUPPORTED = {"0.1.25"}
+
+
+def _conductor_version(text):
+    """Parse 'Conductor v0.1.25'-style output; '' if unrecognizable."""
+    m = re.search(r"v?(\d+\.\d+\.\d+)", text or "")
+    return m.group(1) if m else ""
 
 MILL = pathlib.Path(os.environ.get("MILL_DIR", ".mill"))
 PROGRESS = MILL / "progress.json"
@@ -181,8 +193,23 @@ def cmd_init(source, base_branch="main"):
         out(ok=False, error=str(e))
     MILL.mkdir(exist_ok=True)
     (MILL / ".gitignore").write_text("*\n")  # .mill never enters version control
+    try:
+        cond_ver = _conductor_version(sh("conductor", "--version",
+                                         timeout=30).stdout)
+    except Exception:
+        cond_ver = ""
+    if not cond_ver:
+        journal("conductor_check", version="unknown", action="proceed")
+    elif (cond_ver not in CONDUCTOR_SUPPORTED
+          and not os.environ.get("MILL_SKIP_CONDUCTOR_CHECK")):
+        out(ok=False, error=(
+            f"conductor {cond_ver} is not a known-good version for this "
+            f"engine (supported: {sorted(CONDUCTOR_SUPPORTED)}). Re-pin "
+            f"conductor, or set MILL_SKIP_CONDUCTOR_CHECK=1 after verifying "
+            f"compatibility (then add it to CONDUCTOR_SUPPORTED)."))
     (MILL / "meta.json").write_text(json.dumps(
-        {"engine": ENGINE_VERSION, "schema": STATE_SCHEMA}, indent=2))
+        {"engine": ENGINE_VERSION, "schema": STATE_SCHEMA,
+         "conductor": cond_ver or "unknown"}, indent=2))
     # Resolved config for agents to read (prompts reference .mill/config.json).
     (MILL / "config.json").write_text(json.dumps(cfg, indent=2))
     if re.fullmatch(r"\d+", source):
