@@ -578,6 +578,10 @@ agents:
       `git log --oneline <base>..HEAD` to see all changes. The spec is
       .mill/spec.md.
 
+      If .mill/review_notes.json exists, it lists medium/low-severity chunk
+      review objections that were accepted to keep chunks flowing. Re-examine
+      each: if any is actually a security concern, treat it as a finding.
+
       The repository's security invariants are in .mill/config.json under
       "security_invariants" — treat every one as inviolable and check the
       whole diff against them. Also review for: injection of any kind,
@@ -600,7 +604,11 @@ agents:
     description: "Spec-compliance matrix review (GPT)"
     prompt: |
       You are auditing whether an implementation actually satisfies its
-      specification. The spec is .mill/spec.md; the implementation is every
+      specification. If .mill/review_notes.json exists, it lists medium/low
+      chunk-review objections accepted to keep chunks flowing — verify each
+      is either resolved by later chunks or genuinely acceptable residue;
+      flag any that materially violates the spec.
+      The spec is .mill/spec.md; the implementation is every
       commit after the base recorded in .mill/progress.json (key "base") —
       run `git diff <base>..HEAD` and explore the repository to verify
       claims. Read .mill/config.json and its "skills_dir" directory first if

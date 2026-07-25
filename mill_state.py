@@ -39,6 +39,9 @@ DEFAULT_LIMITS = {"plan_rounds": 3, "gate_attempts": 3, "review_rounds": 2,
 # planning rather than blocking — demanding zero findings from an adversarial
 # source-truth reviewer is an asymptote it never reaches.
 SEVERITY_HARD = {"blocking", "high"}
+# Severities that may ride along without blocking (gates fail-safe: a finding
+# or objection with a MISSING or unrecognized severity counts as hard).
+SEVERITY_SOFT = {"medium", "low", "note", "minor"}
 
 
 def load_config():
@@ -292,7 +295,15 @@ def plan_trajectory():
 
 
 def cmd_spec_verdict(review_text):
-    """Gate after the spec reviewer: sound -> plan, anything else -> human."""
+    """Gate after the spec reviewer: sound -> plan; needs_clarification with
+    ONLY soft findings (every finding explicitly medium/low) -> plan, carrying
+    the findings as accepted interpretations; anything else -> human.
+
+    Rationale: adversarial reviewers are nondeterministic and always find
+    another medium on a re-review — demanding zero findings is an asymptote
+    (the "medium asymptote"). Hard findings (blocking/high) or any finding
+    with a MISSING/unknown severity still park the run (fail-safe: unknown
+    blocks, never passes)."""
     verdict, payload = parse_review(review_text)
     dirty = tree_dirty_outside_mill()
     if dirty:
@@ -303,10 +314,15 @@ def cmd_spec_verdict(review_text):
     (MILL / "spec_findings.json").write_text(json.dumps(
         {"verdict": verdict, "estimated_chunks": est, "findings": findings},
         indent=2))
+    all_soft = bool(findings) and all(
+        _severity(f) in SEVERITY_SOFT for f in findings)
+    accepted = verdict == "needs_clarification" and all_soft and not dirty
     journal("spec_review", verdict=verdict, findings=findings,
-            estimated_chunks=est)
-    if verdict == "sound" and not dirty:
-        out(action="plan", findings_count=len(findings), estimated_chunks=est)
+            estimated_chunks=est,
+            accepted_as_interpretations=len(findings) if accepted else 0)
+    if not dirty and (verdict == "sound" or accepted):
+        out(action="plan", findings_count=len(findings), estimated_chunks=est,
+            accepted_interpretations=len(findings) if accepted else 0)
     out(action="clarify", findings_count=len(findings), estimated_chunks=est,
         summary="; ".join(str(f.get("detail", ""))[:100] for f in findings[:4]))
 
@@ -523,6 +539,25 @@ def cmd_review_gate(review_text):
     if verdict == "approve":
         (MILL / "objections.json").unlink(missing_ok=True)
         out(action="commit")
+    # Severity-aware pass: if EVERY objection is explicitly soft
+    # (medium/low), approve and carry the objections to the final
+    # security/compliance sweep instead of hard-deadlocking the chunk —
+    # zero-findings-per-chunk is an asymptote; ruthless gates turn 5%
+    # residue into full stops. Fail-safe: any objection with a missing or
+    # unrecognized severity still triggers a revise round.
+    objections = payload.get("objections", [])
+    if objections and all(_severity(o) in SEVERITY_SOFT for o in objections):
+        prog_chunk = prog["chunk"]
+        notes_path = MILL / "review_notes.json"
+        try:
+            notes = json.loads(notes_path.read_text())
+        except (FileNotFoundError, json.JSONDecodeError):
+            notes = []
+        notes.append({"chunk": prog_chunk, "objections": objections})
+        notes_path.write_text(json.dumps(notes, indent=2))
+        journal("chunk_soft_pass", chunk=prog_chunk, carried=len(objections))
+        (MILL / "objections.json").unlink(missing_ok=True)
+        out(action="commit", carried_notes=len(objections))
     prog["review_rounds"] += 1
     save_progress(prog)
     journal("chunk_revise", chunk=prog["chunk"], rounds=prog["review_rounds"],
