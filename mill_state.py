@@ -572,6 +572,49 @@ def cmd_review_gate(review_text):
     out(action="revise", rounds=prog["review_rounds"])
 
 
+def cmd_sweep_check():
+    """Route to the sweep pass only when soft-passed review notes exist."""
+    notes_path = MILL / "review_notes.json"
+    try:
+        notes = json.loads(notes_path.read_text())
+    except (FileNotFoundError, json.JSONDecodeError):
+        notes = []
+    count = sum(len(n.get("objections", [])) for n in notes)
+    if count:
+        out(action="sweep", notes=count)
+    out(action="skip", notes=0)
+
+
+def cmd_sweep_gate():
+    """Commit the sweep iff the chunk gates pass; otherwise revert it fully.
+
+    Never fails the run: the sweep is strictly opportunistic — on any gate
+    failure the tree is restored and the carried notes simply remain as
+    accepted residue for the final reviews."""
+    dirty = tree_dirty_outside_mill()
+    if not dirty:
+        journal("sweep_noop", changed=0)
+        out(ok=True, swept=False, reason="sweep changed nothing")
+    ok, log = run_gates(deep=False)
+    if not ok:
+        sh("git", "checkout", "--", ".")
+        sh("git", "clean", "-fd")
+        journal("sweep_reverted", gate_log=log[-500:])
+        out(ok=True, swept=False, reason="gates failed; sweep reverted")
+    sh("git", "add", "-A", check=True)
+    p = sh("git", "commit", "-m",
+           "chore(mill): sweep — light fixes for carried review notes\n\n"
+           "Co-Authored-By: mill <noreply@frostyard>")
+    if p.returncode != 0:
+        sh("git", "checkout", "--", ".")
+        sh("git", "clean", "-fd")
+        journal("sweep_reverted", gate_log="commit failed")
+        out(ok=True, swept=False, reason="commit failed; sweep reverted")
+    sha = sh("git", "rev-parse", "--short", "HEAD").stdout.strip()
+    journal("sweep_done", sha=sha, files=len(dirty))
+    out(ok=True, swept=True, sha=sha, files=len(dirty))
+
+
 def cmd_commit_chunk():
     prog = load_progress()
     chunks = json.loads((MILL / "plan.json").read_text())["chunks"]
@@ -708,6 +751,8 @@ def main():
         "pre-review": (cmd_pre_review, 0),
         "review-gate": (cmd_review_gate, 1),
         "commit-chunk": (cmd_commit_chunk, 0),
+        "sweep-check": (cmd_sweep_check, 0),
+        "sweep-gate": (cmd_sweep_gate, 0),
         "final-gate": (cmd_final_gate, 2),
         "harvest-gate": (cmd_harvest_gate, 0),
         "deep-gate": (cmd_deep_gate, 1),

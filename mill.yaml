@@ -349,9 +349,57 @@ agents:
     args: ["{{ workflow.dir }}/mill_state.py", "select"]
     timeout: 30
     routes:
-      - to: final_reviews
+      - to: sweep_check
         when: "{{ select_chunk.output.done }}"
       - to: implement
+
+  # ------------------------------------------------- post-loop sweep pass
+  # One bounded round of light fixes for the medium/low objections that
+  # soft-passed chunk review (carried in .mill/review_notes.json). Runs
+  # BEFORE final reviews so they see the swept tree. Gates-protected: the
+  # sweep commits only if the chunk gates pass, otherwise it is reverted
+  # and the notes remain as accepted residue — the run NEVER fails here.
+  - name: sweep_check
+    type: script
+    description: Skip the sweep when no soft-passed notes accumulated
+    command: python3
+    args: ["{{ workflow.dir }}/mill_state.py", "sweep-check"]
+    timeout: 30
+    routes:
+      - to: sweep
+        when: "{{ sweep_check.output.action == 'sweep' }}"
+      - to: final_reviews
+
+  - name: sweep
+    model: "{{ workflow.input.implement_model }}"
+    max_agent_iterations: 120
+    description: Single round of light fixes for carried review notes
+    prompt: |
+      You are doing a single, bounded cleanup pass at the end of a mill run.
+      .mill/review_notes.json lists medium/low-severity review objections
+      that were accepted during chunk review to keep work flowing. Read it,
+      then read .mill/config.json and the skills in its "skills_dir".
+
+      Address ONLY the listed objections, and only those fixable with a
+      small, obviously-correct change (a missed rename, an unquoted log
+      field, a missing test case, a stale comment). SKIP any note that
+      requires judgment, design, or refactoring — leave it untouched and
+      move on. Never modify anything not named by a note. Do not run the
+      quality gates; the harness does that next. Do not commit.
+
+      End with one fenced ```json block:
+      {"addressed": <count>, "skipped": <count>}
+    routes:
+      - to: sweep_gate
+
+  - name: sweep_gate
+    type: script
+    description: Commit the sweep if gates pass, else revert it entirely
+    command: python3
+    args: ["{{ workflow.dir }}/mill_state.py", "sweep-gate"]
+    timeout: 1800
+    routes:
+      - to: final_reviews
 
   - name: implement
     model: "{{ workflow.input.implement_model }}"
