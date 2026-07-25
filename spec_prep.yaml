@@ -63,7 +63,7 @@ agents:
   # different model (cross-model). Its JSON contract is parsed by mill_state.py.
   - name: prep_review
     provider: copilot
-    model: gpt-5.5
+    model: gpt-5.6-sol
     max_agent_iterations: 120
     description: "Adversarial spec review against source truth (GPT)"
     prompt: |

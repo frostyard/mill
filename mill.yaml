@@ -92,7 +92,7 @@ agents:
   # ----------------------------------------------------------- spec review
   - name: spec_review
     provider: copilot
-    model: gpt-5.5
+    model: gpt-5.6-sol
     max_agent_iterations: 120
     description: "Validate the spec itself before any planning spend (GPT)"
     prompt: |
@@ -240,7 +240,7 @@ agents:
 
   - name: plan_review
     provider: copilot
-    model: gpt-5.5
+    model: gpt-5.6-sol
     max_agent_iterations: 120
     description: "Adversarial cross-model plan review (GPT)"
     prompt: |
@@ -503,7 +503,7 @@ agents:
 
   - name: chunk_review
     provider: copilot
-    model: gpt-5.5
+    model: gpt-5.6-sol
     max_agent_iterations: 120
     description: "Adversarial cross-model chunk review (GPT)"
     prompt: |
@@ -647,7 +647,7 @@ agents:
 
   - name: compliance_review
     provider: copilot
-    model: gpt-5.5
+    model: gpt-5.6-sol
     max_agent_iterations: 150
     description: "Spec-compliance matrix review (GPT)"
     prompt: |

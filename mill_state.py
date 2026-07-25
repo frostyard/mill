@@ -30,7 +30,7 @@ import tomllib
 # .mill/ state contract (journal event vocabulary + file shapes). Consumers
 # (millhouse's tailer) read .mill/meta.json and check schema compatibility
 # instead of trusting an implicit, drifting interface.
-ENGINE_VERSION = "0.1.0"
+ENGINE_VERSION = "0.1.1"
 STATE_SCHEMA = 1
 # Conductor versions this engine is known-good against — the engine below
 # our engine. A positive mismatch blocks at init (a silent conductor upgrade
