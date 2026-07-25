@@ -11,6 +11,9 @@
 #   --fresh    discard an existing worktree for this source and start over
 #   --model=M  implementer model for implement/fix agents (default sonnet;
 #              e.g. --model=opus for hard reasoning-heavy chunks)
+#   --copilot  run every agent through the copilot provider instead
+#              (mill-copilot.yaml — same models, zero Claude plan usage;
+#              --model= then takes copilot IDs, e.g. --model=claude-opus-5)
 #
 # Requires a .mill.toml at the repo root (run the millify skill to create
 # one) and the conductor CLI with the claude-agent-sdk provider installed.
@@ -23,11 +26,11 @@ set -euo pipefail
 
 MILL_HOME=$(cd "$(dirname "$(realpath "$0")")" && pwd)
 
-usage() { grep '^#' "$0" | sed 's/^# \{0,1\}//' | head -12; exit 1; }
+usage() { grep '^#' "$0" | sed 's/^# \{0,1\}//' | head -15; exit 1; }
 
 [ $# -ge 1 ] || usage
 SOURCE="$1"; shift
-AUTO=0 OPEN_PR=true DEEP=true FRESH=0 WEB=0 IMPL_MODEL=""
+AUTO=0 OPEN_PR=true DEEP=true FRESH=0 WEB=0 IMPL_MODEL="" MILL_YAML=mill.yaml
 for arg in "$@"; do
     case "$arg" in
         --auto)    AUTO=1 ;;
@@ -36,6 +39,7 @@ for arg in "$@"; do
         --fresh)   FRESH=1 ;;
         --web)     WEB=1 ;;
         --model=*) IMPL_MODEL="${arg#--model=}" ;;
+        --copilot) MILL_YAML=mill-copilot.yaml ;;
         *) usage ;;
     esac
 done
@@ -98,7 +102,7 @@ FLAGS=()
 [ "$WEB" = 1 ] && FLAGS+=(--web-bg)
 [ -n "$IMPL_MODEL" ] && FLAGS+=(-i "implement_model=$IMPL_MODEL")
 
-exec conductor run "$MILL_HOME/mill.yaml" \
+exec conductor run "$MILL_HOME/$MILL_YAML" \
     -i "source=$SOURCE" \
     -i "deep_gate=$DEEP" \
     -i "open_pr=$OPEN_PR" \

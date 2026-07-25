@@ -7,11 +7,19 @@ fail() { echo "✗ $1" >&2; exit 1; }
 
 # 1. Every script step must resolve the helper via workflow.dir, never a
 #    repo-relative path (the engine runs from its install dir).
-for wf in mill.yaml spec_prep.yaml; do
+for wf in mill.yaml mill-copilot.yaml spec_prep.yaml; do
     grep -q '"scripts/mill_state.py"' "$wf" \
         && fail "$wf references scripts/mill_state.py — use {{ workflow.dir }}/mill_state.py"
 done
 echo "✓ script paths use workflow.dir"
+
+# 1b. mill-copilot.yaml is generated from mill.yaml; fail if stale.
+tmp=$(mktemp)
+./gen_copilot.sh "$tmp" >/dev/null
+diff -q "$tmp" mill-copilot.yaml >/dev/null \
+    || { rm -f "$tmp"; fail "mill-copilot.yaml is stale — run ./gen_copilot.sh"; }
+rm -f "$tmp"
+echo "✓ mill-copilot.yaml in sync with mill.yaml"
 
 # 2. Python syntax.
 python3 -c "import ast; ast.parse(open('mill_state.py').read())"

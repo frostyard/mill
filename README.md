@@ -158,7 +158,15 @@ mill 35                    # run issue #35, interactive gates
 mill 35 --no-pr --web      # background run with a live web dashboard
 mill spec.md --auto        # unattended (auto-approves gates)
 mill 35 --no-pr --no-deep  # local-only, fast gates
+mill 35 --copilot          # every agent via the copilot provider
 ```
+
+`--copilot` swaps in `mill-copilot.yaml`, a generated profile that runs the
+identical workflow entirely through the copilot provider — same model
+family, zero Claude plan usage. With it, `--model=` takes copilot IDs
+(`--model=claude-opus-5`). The file is generated from `mill.yaml` by
+`./gen_copilot.sh`; edit `mill.yaml` and regenerate (checks.sh fails if it
+drifts).
 
 `--web` gives you conductor's real-time dashboard — the pipeline as a live
 graph with streaming agent output, and human gates you answer in the
