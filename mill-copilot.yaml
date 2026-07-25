@@ -654,7 +654,12 @@ agents:
   - name: compliance_review
     provider: copilot
     model: gpt-5.6-sol
-    max_agent_iterations: 150
+    # A requirement-by-requirement matrix costs several tool calls per
+    # requirement (read the spec sentence, find the code, cite file:line),
+    # so this scales with spec size times diff size — not with either alone.
+    # A 33-requirement spec over a 9-chunk diff exhausted 150 and killed the
+    # run at the last gate, after all the expensive work was already done.
+    max_agent_iterations: 400
     description: "Spec-compliance matrix review (GPT)"
     prompt: |
       You are auditing whether an implementation actually satisfies its
