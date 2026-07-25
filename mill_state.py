@@ -26,6 +26,13 @@ import tomllib
 # The state dir is overridable so the pre-flight spec-prep phase can use its
 # own directory (.mill-prep) without colliding with an implementation run's
 # .mill in the same checkout, and so concurrent runs never share state.
+# Engine version (bump on behavior/contract changes) and the version of the
+# .mill/ state contract (journal event vocabulary + file shapes). Consumers
+# (millhouse's tailer) read .mill/meta.json and check schema compatibility
+# instead of trusting an implicit, drifting interface.
+ENGINE_VERSION = "0.1.0"
+STATE_SCHEMA = 1
+
 MILL = pathlib.Path(os.environ.get("MILL_DIR", ".mill"))
 PROGRESS = MILL / "progress.json"
 CONFIG = pathlib.Path(".mill.toml")
@@ -174,6 +181,8 @@ def cmd_init(source, base_branch="main"):
         out(ok=False, error=str(e))
     MILL.mkdir(exist_ok=True)
     (MILL / ".gitignore").write_text("*\n")  # .mill never enters version control
+    (MILL / "meta.json").write_text(json.dumps(
+        {"engine": ENGINE_VERSION, "schema": STATE_SCHEMA}, indent=2))
     # Resolved config for agents to read (prompts reference .mill/config.json).
     (MILL / "config.json").write_text(json.dumps(cfg, indent=2))
     if re.fullmatch(r"\d+", source):
