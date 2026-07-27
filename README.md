@@ -1,3 +1,20 @@
+> [!IMPORTANT]
+> **This repository is archived. The mill now lives inside
+> [frostyard/millhouse](https://github.com/frostyard/millhouse) at `engine/`,**
+> where it is developed and released with millhouse's tag series.
+>
+> Everything here is frozen at 2026-07-25 and is missing every engine fix
+> since — do not install from it. To get the mill:
+>
+> ```sh
+> git clone git@github.com:frostyard/millhouse.git
+> cd millhouse && sh install.sh
+> ```
+>
+> The history in this repository was carried into millhouse by
+> `git subtree add`, so the engine's full past is preserved there; it is not
+> lost by this repository being closed.
+
 # mill
 
 <p align="center">
